@@ -97,6 +97,11 @@ dist
 # FuseBox cache
 .fusebox/
 
+backend/
+*.txt
+*.zip
+*.cfg
+
 # DynamoDB Local files
 .dynamodb/
 
