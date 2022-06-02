@@ -5,7 +5,6 @@ import { Page } from 'puppeteer'
 import puppeteer from 'puppeteer-extra'
 import Stealth from 'puppeteer-extra-plugin-stealth'
 import { Cluster } from 'puppeteer-cluster'
-import HttpsProxyAgent from 'https-proxy-agent'
 import { ContractLevel } from './enums'
 import xmlParser from 'xml2json'
 import * as fs from 'fs'
@@ -118,15 +117,12 @@ const scraperObject = {
             retryLimit: 20,
             retryDelay: 2000,
             timeout: 6000000,
-            monitor: true,
             puppeteer,
             puppeteerOptions: {
-                // "headless": false,
                 args: ["--disable-setuid-sandbox",
                     "--no-sandbox",
                     "--disable-dev-shm-usage",
                     "--use-gl=egl",
-                    //"--proxy-server=http://80.48.119.28:8080"
                 ],
                 'ignoreHTTPSErrors': true,
             }
@@ -475,10 +471,6 @@ const scraperObject = {
             await cluster.idle()
         }
         await cluster.close()
-        /*, {
-                        proxy: false,
-                        httpsAgent: new HttpsProxyAgent.HttpsProxyAgent(`https://${process.env.PROXIES!.split(' ')[Math.floor(Math.random()*14)]}`)
-                    }*/
 	}
 }
 
