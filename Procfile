@@ -1,1 +1,1 @@
-scraper: node build/index.js
+scraper: npm start
