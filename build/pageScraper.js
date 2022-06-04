@@ -42,6 +42,7 @@ const scraperObject = {
     login: 'https://www.bridgebase.com/myhands/myhands_login.php?t=%2Fmyhands%2Findex.php%3F',
     async scrape() {
         puppeteer_extra_1.default.use((0, puppeteer_extra_plugin_stealth_1.default)());
+        const stream = fs.createWriteStream("test18.txt", { flags: 'a' });
         const bboDir = {
             'S': 0,
             'W': 1,
@@ -124,19 +125,16 @@ const scraperObject = {
             } });
         const cluster = await puppeteer_cluster_1.Cluster.launch({
             concurrency: puppeteer_cluster_1.Cluster.CONCURRENCY_PAGE,
-            maxConcurrency: 40,
+            maxConcurrency: 16,
             retryLimit: 20,
             retryDelay: 2000,
             timeout: 6000000,
-            monitor: true,
             puppeteer: puppeteer_extra_1.default,
             puppeteerOptions: {
-                // "headless": false,
                 args: ["--disable-setuid-sandbox",
                     "--no-sandbox",
                     "--disable-dev-shm-usage",
                     "--use-gl=egl",
-                    //"--proxy-server=http://80.48.119.28:8080"
                 ],
                 'ignoreHTTPSErrors': true,
             }
@@ -498,7 +496,6 @@ const scraperObject = {
                 console.log(`${++failures} no data`);
             }
         };
-        const stream = fs.createWriteStream("test18.txt", { flags: 'a' });
         console.log(urls.length);
         let failures = 0;
         let chunkedUrls = lodash_1.default.chunk(urls, 200);
@@ -507,10 +504,6 @@ const scraperObject = {
             await cluster.idle();
         }
         await cluster.close();
-        /*, {
-                        proxy: false,
-                        httpsAgent: new HttpsProxyAgent.HttpsProxyAgent(`https://${process.env.PROXIES!.split(' ')[Math.floor(Math.random()*14)]}`)
-                    }*/
     }
 };
 exports.default = scraperObject;
