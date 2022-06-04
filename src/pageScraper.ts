@@ -16,6 +16,7 @@ const scraperObject = {
     login: 'https://www.bridgebase.com/myhands/myhands_login.php?t=%2Fmyhands%2Findex.php%3F',
 	async scrape() {
         puppeteer.use(Stealth())
+        const stream = fs.createWriteStream("test18.txt", {flags:'a'})
         const bboDir: {[key: string]: number} = {
             'S': 0,
             'W': 1,
@@ -113,7 +114,7 @@ const scraperObject = {
         }})
         const cluster = await Cluster.launch({
             concurrency: Cluster.CONCURRENCY_PAGE,
-            maxConcurrency: 8,
+            maxConcurrency: 16,
             retryLimit: 20,
             retryDelay: 2000,
             timeout: 6000000,
@@ -462,7 +463,6 @@ const scraperObject = {
                 console.log(`${++failures} no data`)
             }
         }
-        const stream = fs.createWriteStream("test18.txt", {flags:'a'})
         console.log(urls.length)
         let failures = 0
         let chunkedUrls = _.chunk(urls, 200)
