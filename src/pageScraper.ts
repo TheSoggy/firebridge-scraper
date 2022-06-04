@@ -458,7 +458,7 @@ const scraperObject = {
                 }
             }
             if (dataObj.boards.length > 0) {
-                stream.write(JSON.stringify(dataObj.boards) + "\n")
+                console.log(JSON.stringify(dataObj.boards) + "\n")
             } else {
                 console.log(`${++failures} no data`)
             }
