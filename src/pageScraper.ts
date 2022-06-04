@@ -119,6 +119,7 @@ const scraperObject = {
             retryDelay: 2000,
             timeout: 6000000,
             puppeteer,
+            monitor: true,
             puppeteerOptions: {
                 args: ["--disable-setuid-sandbox",
                     "--no-sandbox",
@@ -458,7 +459,7 @@ const scraperObject = {
                 }
             }
             if (dataObj.boards.length > 0) {
-                console.log(JSON.stringify(dataObj.boards) + "\n")
+                //console.log(JSON.stringify(dataObj.boards) + "\n")
             } else {
                 console.log(`${++failures} no data`)
             }
