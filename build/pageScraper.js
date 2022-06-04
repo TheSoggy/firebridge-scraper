@@ -125,7 +125,7 @@ const scraperObject = {
             } });
         const cluster = await puppeteer_cluster_1.Cluster.launch({
             concurrency: puppeteer_cluster_1.Cluster.CONCURRENCY_PAGE,
-            maxConcurrency: 16,
+            maxConcurrency: 32,
             retryLimit: 20,
             retryDelay: 2000,
             timeout: 6000000,
