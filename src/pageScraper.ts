@@ -113,7 +113,7 @@ const scraperObject = {
         }})
         const cluster = await Cluster.launch({
             concurrency: Cluster.CONCURRENCY_PAGE,
-            maxConcurrency: 32,
+            maxConcurrency: 8,
             retryLimit: 20,
             retryDelay: 2000,
             timeout: 6000000,
