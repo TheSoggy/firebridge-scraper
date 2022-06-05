@@ -99,7 +99,6 @@ dist
 
 backend/
 *.txt
-*.zip
 *.cfg
 
 # DynamoDB Local files
