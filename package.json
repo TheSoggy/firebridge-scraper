@@ -24,6 +24,7 @@
     "puppeteer-extra": "^3.2.3",
     "puppeteer-extra-plugin-stealth": "^2.9.0",
     "puppeteer-page-proxy": "^1.2.8",
+    "random-useragent": "^0.5.0",
     "react": "^18.1.0",
     "react-dom": "^18.1.0",
     "uuid": "^8.3.2",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@tsconfig/node16": "^1.0.2",
+    "@types/random-useragent": "^0.3.1",
     "@types/react": "^18.0.9",
     "@types/uuid": "^8.3.4",
     "@types/xml2json": "^0.11.4",

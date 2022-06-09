@@ -21,7 +21,7 @@ async function insert(boards: Board[]) {
       lin
     ) VALUES (
       ${dealUuid},
-      '${board.lin}'
+      "${board.lin}"
     )`
     insertDeal.setCql(queryStr)
     await promisifiedClient.executeQuery(insertDeal)

@@ -40,6 +40,7 @@ const lodash_1 = __importDefault(require("lodash"));
 const astraDB_1 = __importDefault(require("./astraDB"));
 const constants_1 = require("./constants");
 const pageFunctions_1 = require("./pageFunctions");
+const random_useragent_1 = require("random-useragent");
 const scraperObject = {
     url: 'https://webutil.bridgebase.com/v2/tarchive.php?m=all&d=All%20Tourneys',
     login: 'https://www.bridgebase.com/myhands/myhands_login.php?t=%2Fmyhands%2Findex.php%3F',
@@ -140,10 +141,14 @@ const scraperObject = {
                     board.lin = decodeURIComponent(board.lin.slice(13, -39));
                 }
                 else if (board.lin.includes('popup')) {
-                    await axios_1.default.get(`https://webutil.bridgebase.com/v2/mh_handxml.php?id=${board.lin.slice(12, -39)}`)
-                        .then(res => {
+                    await axios_1.default.get(`https://webutil.bridgebase.com/v2/mh_handxml.php?id=${board.lin.slice(12, -39)}`, {
+                        headers: {
+                            'user-agent': (0, random_useragent_1.getRandom)()
+                        }
+                    }).then(res => {
                         board.lin = JSON.parse(xml2json_1.default.toJson(res.data)).lin.$t;
                     }).catch(err => {
+                        console.log('BBO down');
                         axios_1.default.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
                             headers: {
                                 'Content-Type': 'application/json',
@@ -160,7 +165,11 @@ const scraperObject = {
             let getDDSolver = async () => {
                 try {
                     const res = await axios_1.default.get("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
-                        `${boardInfo.hands.join(' ')}&vul=${boardInfo.vul}&sockref=${Date.now()}&uniqueTID=${Date.now()}&_=${Date.now()}`);
+                        `${boardInfo.hands.join(' ')}&vul=${boardInfo.vul}&sockref=${Date.now()}&uniqueTID=${Date.now() + 3}&_=${Date.now() - 10000}`, {
+                        headers: {
+                            'user-agent': (0, random_useragent_1.getRandom)()
+                        }
+                    });
                     boards.forEach(board => {
                         if (board.contract != 'P') {
                             board.tricksDiff = board.tricksTaken -
@@ -172,6 +181,10 @@ const scraperObject = {
                     });
                 }
                 catch (err) {
+                    console.log('DD Solver down');
+                    console.log(err);
+                    console.log("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
+                        `${boardInfo.hands.join(' ')}&vul=${boardInfo.vul}&sockref=${Date.now()}&uniqueTID=${Date.now() + 3}&_=${Date.now() - 10000}`);
                     axios_1.default.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
                         headers: {
                             'Content-Type': 'application/json',
@@ -243,11 +256,21 @@ const scraperObject = {
                             const res = await axios_1.default.get("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
                                 `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
                                 `&leader=${constants_1.bboNumtoDir[(constants_1.bboDir[board.contract[2]] + 1) % 4]}` +
-                                `&requesttoken=${Date.now()}&uniqueTID=${Date.now()}`);
+                                `&requesttoken=${Date.now()}&uniqueTID=${Date.now() + 3}`, {
+                                headers: {
+                                    'user-agent': (0, random_useragent_1.getRandom)()
+                                }
+                            });
                             board.leadCost = 13 - res.data.sess.cards.filter(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]].includes(constants_1.cardRank[parsedLin.lead[1]]))[0].score -
                                 board.tricksTaken + board.tricksDiff;
                         }
                         catch (err) {
+                            console.log('DD Solver down');
+                            console.log(err);
+                            console.log("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
+                                `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
+                                `&leader=${constants_1.bboNumtoDir[(constants_1.bboDir[board.contract[2]] + 1) % 4]}` +
+                                `&requesttoken=${Date.now()}&uniqueTID=${Date.now() + 3}`);
                             axios_1.default.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
                                 headers: {
                                     'Content-Type': 'application/json',
@@ -378,7 +401,11 @@ const scraperObject = {
                 let getDDSolver = async () => {
                     try {
                         const res = await axios_1.default.get("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
-                            `${parsedLin.hands.join(' ')}&vul=${parsedLin.vul}&sockref=${Date.now()}&uniqueTID=${Date.now()}&_=${Date.now()}`);
+                            `${parsedLin.hands.join(' ')}&vul=${parsedLin.vul}&sockref=${Date.now()}&uniqueTID=${Date.now() + 3}&_=${Date.now() - 10000}`, {
+                            headers: {
+                                'user-agent': (0, random_useragent_1.getRandom)()
+                            }
+                        });
                         if (board.contract != 'P') {
                             board.tricksDiff = board.tricksTaken -
                                 parseInt(res.data.sess.ddtricks[5 * constants_1.ddsDir[board.contract[2]] + constants_1.ddsContractSuits[board.contract[1]]], 16);
@@ -388,6 +415,10 @@ const scraperObject = {
                         board.optimalPoints = parseInt(res.data.scoreNS.substring(3));
                     }
                     catch (err) {
+                        console.log('DD Solver down');
+                        console.log(err);
+                        console.log("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
+                            `${parsedLin.hands.join(' ')}&vul=${parsedLin.vul}&sockref=${Date.now()}&uniqueTID=${Date.now() + 3}&_=${Date.now() - 10000}`);
                         axios_1.default.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
                             headers: {
                                 'Content-Type': 'application/json',
@@ -402,11 +433,21 @@ const scraperObject = {
                         const res = await axios_1.default.get("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
                             `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
                             `&leader=${constants_1.bboNumtoDir[(constants_1.bboDir[board.contract[2]] + 1) % 4]}` +
-                            `&requesttoken=${Date.now()}&uniqueTID=${Date.now()}`);
+                            `&requesttoken=${Date.now()}&uniqueTID=${Date.now() + 3}`, {
+                            headers: {
+                                'user-agent': (0, random_useragent_1.getRandom)()
+                            }
+                        });
                         board.leadCost = 13 - res.data.sess.cards.filter(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]].includes(constants_1.cardRank[parsedLin.lead[1]]))[0].score -
                             board.tricksTaken + board.tricksDiff;
                     }
                     catch (err) {
+                        console.log('DD Solver down');
+                        console.log(err);
+                        console.log("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
+                            `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
+                            `&leader=${constants_1.bboNumtoDir[(constants_1.bboDir[board.contract[2]] + 1) % 4]}` +
+                            `&requesttoken=${Date.now()}&uniqueTID=${Date.now() + 3}`);
                         axios_1.default.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
                             headers: {
                                 'Content-Type': 'application/json',
