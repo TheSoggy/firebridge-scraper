@@ -411,7 +411,7 @@ const scraperObject = {
       chunk.forEach(url => cluster.queue(url, boardsPromise))
       await cluster.idle()
       await axios.patch(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/config-vars/`, {
-        'LAST_TOURNEY_URL': chunk[chunk.length - 1]
+        "LAST_TOURNEY_URL": chunk[chunk.length - 1]
       },
       {
         headers: {
