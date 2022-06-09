@@ -137,35 +137,32 @@ const scraperObject = {
       if (boards.length == 0 || !boards) return boards
       let boardInfo = parseLin(boards[0].lin)!
       let getDDSolver = async () => {
-        try {
-          const res = await axios.get("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
-            `${boardInfo.hands.join(' ')}&vul=${boardInfo.vul}&sockref=${Date.now()}&uniqueTID=${Date.now()+3}&_=${Date.now()-10000}`, {
+        const res = await axios.get("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
+          `${boardInfo.hands.join(' ')}&vul=${boardInfo.vul}&sockref=${Date.now()}&uniqueTID=${Date.now()+3}&_=${Date.now()-10000}`, {
+            headers: {
+              'user-agent': getRandom()
+            }
+          }).catch(err => {
+            console.log('DD Solver down')
+            console.log("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
+            `${boardInfo.hands.join(' ')}&vul=${boardInfo.vul}&sockref=${Date.now()}&uniqueTID=${Date.now()+3}&_=${Date.now()-10000}`)
+            axios.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
               headers: {
-                'user-agent': getRandom()
+                'Content-Type': 'application/json',
+                'Accept': 'application/vnd.heroku+json; version=3',
+                'Authorization': `Bearer ${process.env.HEROKU_API_TOKEN}`
               }
             })
-          boards.forEach(board => {
-            if (board.contract != 'P') {
-                board.tricksDiff = board.tricksTaken! -
-                    parseInt(res.data.sess.ddtricks[5 * ddsDir[board.contract[2]] + ddsContractSuits[board.contract[1]]], 16)
-            }
-            board.pointsDiff = board.score -
-                parseInt(res.data.scoreNS.substring(3))
-            board.optimalPoints = parseInt(res.data.scoreNS.substring(3))
           })
-        } catch (err) {
-          console.log('DD Solver down')
-              console.log(err)
-          console.log("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
-          `${boardInfo.hands.join(' ')}&vul=${boardInfo.vul}&sockref=${Date.now()}&uniqueTID=${Date.now()+3}&_=${Date.now()-10000}`)
-          axios.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/vnd.heroku+json; version=3',
-              'Authorization': `Bearer ${process.env.HEROKU_API_TOKEN}`
-            }
-          })
-        }
+        boards.forEach(board => {
+          if (board.contract != 'P') {
+              board.tricksDiff = board.tricksTaken! -
+                  parseInt(res!.data.sess.ddtricks[5 * ddsDir[board.contract[2]] + ddsContractSuits[board.contract[1]]], 16)
+          }
+          board.pointsDiff = board.score -
+              parseInt(res!.data.scoreNS.substring(3))
+          board.optimalPoints = parseInt(res!.data.scoreNS.substring(3))
+        })
       }
       await getDDSolver()
       await Promise.all(boards.map(async board => {
@@ -216,32 +213,29 @@ const scraperObject = {
               break
           }
           let getLeadSolver = async () => {
-            try {
-              const res = await axios.get("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
-                `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
-                `&leader=${bboNumtoDir[(bboDir[board.contract[2]] + 1) % 4]}` +
-                `&requesttoken=${Date.now()}&uniqueTID=${Date.now()+3}`, {
-                  headers: {
-                    'user-agent': getRandom()
-                  }
-                })
-              board.leadCost = 13 - (<any[]>res.data.sess.cards).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
-                board.tricksTaken! + board.tricksDiff!
-            } catch (err) {
-              console.log('DD Solver down')
-              console.log(err)
-              console.log("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
+            const res = await axios.get("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
               `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
               `&leader=${bboNumtoDir[(bboDir[board.contract[2]] + 1) % 4]}` +
-              `&requesttoken=${Date.now()}&uniqueTID=${Date.now()+3}`)
-              axios.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
+              `&requesttoken=${Date.now()}&uniqueTID=${Date.now()+3}`, {
                 headers: {
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/vnd.heroku+json; version=3',
-                  'Authorization': `Bearer ${process.env.HEROKU_API_TOKEN}`
+                  'user-agent': getRandom()
                 }
+              }).catch(err => {
+                console.log('DD Solver down')
+                console.log("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
+                `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
+                `&leader=${bboNumtoDir[(bboDir[board.contract[2]] + 1) % 4]}` +
+                `&requesttoken=${Date.now()}&uniqueTID=${Date.now()+3}`)
+                axios.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.heroku+json; version=3',
+                    'Authorization': `Bearer ${process.env.HEROKU_API_TOKEN}`
+                  }
+                })
               })
-            }
+            board.leadCost = 13 - (<any[]>res!.data.sess.cards).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
+              board.tricksTaken! + board.tricksDiff!
           }
           await getLeadSolver()
         } else {
@@ -352,61 +346,55 @@ const scraperObject = {
           board.contractLevel = ContractLevel.PASSOUT
         }
         let getDDSolver = async () => {
-          try {
-            const res = await axios.get("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
-              `${parsedLin.hands.join(' ')}&vul=${parsedLin.vul}&sockref=${Date.now()}&uniqueTID=${Date.now()+3}&_=${Date.now()-10000}`, {
+          const res = await axios.get("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
+            `${parsedLin.hands.join(' ')}&vul=${parsedLin.vul}&sockref=${Date.now()}&uniqueTID=${Date.now()+3}&_=${Date.now()-10000}`, {
+              headers: {
+                'user-agent': getRandom()
+              }
+            }).catch(err => {
+              console.log('DD Solver down')
+              console.log("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
+              `${parsedLin.hands.join(' ')}&vul=${parsedLin.vul}&sockref=${Date.now()}&uniqueTID=${Date.now()+3}&_=${Date.now()-10000}`)
+              axios.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
                 headers: {
-                  'user-agent': getRandom()
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/vnd.heroku+json; version=3',
+                  'Authorization': `Bearer ${process.env.HEROKU_API_TOKEN}`
                 }
               })
-            if (board.contract != 'P') {
-              board.tricksDiff = board.tricksTaken! -
-                parseInt(res.data.sess.ddtricks[5 * ddsDir[board.contract[2]] + ddsContractSuits[board.contract[1]]], 16)
-            }
-            board.pointsDiff = board.score -
-              parseInt(res.data.scoreNS.substring(3))
-            board.optimalPoints = parseInt(res.data.scoreNS.substring(3))
-          } catch (err) {
-            console.log('DD Solver down')
-              console.log(err)
-            console.log("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
-            `${parsedLin.hands.join(' ')}&vul=${parsedLin.vul}&sockref=${Date.now()}&uniqueTID=${Date.now()+3}&_=${Date.now()-10000}`)
-            axios.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/vnd.heroku+json; version=3',
-                'Authorization': `Bearer ${process.env.HEROKU_API_TOKEN}`
-              }
             })
+          if (board.contract != 'P') {
+            board.tricksDiff = board.tricksTaken! -
+              parseInt(res!.data.sess.ddtricks[5 * ddsDir[board.contract[2]] + ddsContractSuits[board.contract[1]]], 16)
           }
+          board.pointsDiff = board.score -
+            parseInt(res!.data.scoreNS.substring(3))
+          board.optimalPoints = parseInt(res!.data.scoreNS.substring(3))
         }
         let getLeadSolver = async () => {
-          try {
-            const res = await axios.get("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
-              `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
-              `&leader=${bboNumtoDir[(bboDir[board.contract[2]] + 1) % 4]}` +
-              `&requesttoken=${Date.now()}&uniqueTID=${Date.now()+3}`, {
-                headers: {
-                  'user-agent': getRandom()
-                }
-              })
-            board.leadCost = 13 - (<any[]>res.data.sess.cards).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
-              board.tricksTaken! + board.tricksDiff!
-          } catch (err) {
-            console.log('DD Solver down')
-              console.log(err)
-            console.log("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
+          const res = await axios.get("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
             `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
             `&leader=${bboNumtoDir[(bboDir[board.contract[2]] + 1) % 4]}` +
-            `&requesttoken=${Date.now()}&uniqueTID=${Date.now()+3}`)
-            axios.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
+            `&requesttoken=${Date.now()}&uniqueTID=${Date.now()+3}`, {
               headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/vnd.heroku+json; version=3',
-                'Authorization': `Bearer ${process.env.HEROKU_API_TOKEN}`
+                'user-agent': getRandom()
               }
+            }).catch(err => {
+              console.log('DD Solver down')
+              console.log("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
+              `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
+              `&leader=${bboNumtoDir[(bboDir[board.contract[2]] + 1) % 4]}` +
+              `&requesttoken=${Date.now()}&uniqueTID=${Date.now()+3}`)
+              axios.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/vnd.heroku+json; version=3',
+                  'Authorization': `Bearer ${process.env.HEROKU_API_TOKEN}`
+                }
+              })
             })
-          }
+          board.leadCost = 13 - (<any[]>res!.data.sess.cards).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
+            board.tricksTaken! + board.tricksDiff!
         }
         await getDDSolver()
         if (board.contract != 'P') {
@@ -433,12 +421,11 @@ const scraperObject = {
         }
       }
       if (dataObj.boards.length > 0) {
-        insert(dataObj.boards)
+        await insert(dataObj.boards)
       } else {
         console.log(`${++failures} no data`)
       }
     }
-    console.log(urls.length)
     _.reverse(urls)
     if (process.env.LAST_TOURNEY_URL != '') {
       let idx = _.indexOf(urls, process.env.LAST_TOURNEY_URL)
