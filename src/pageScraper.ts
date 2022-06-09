@@ -32,7 +32,7 @@ const scraperObject = {
       retryDelay: 2000,
       timeout: 60000,
       puppeteer,
-      monitor: true,
+      // monitor: true,
       puppeteerOptions: {
         args: ["--disable-setuid-sandbox",
             "--no-sandbox",
