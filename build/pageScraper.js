@@ -110,8 +110,12 @@ const scraperObject = {
                     competitive: false,
                     declarer: ''
                 };
-                let contract = row.querySelector('td.result').textContent;
+                let contract = row.querySelector('td.result').textContent.toUpperCase();
                 board.contract = contract.replace(/[♣♦♥♠]/, match => suits[match]).replace(/[+\-=]+.*/, '');
+                if ('X' == board.contract[2]) {
+                    board.contract = board.contract.substring(0, 2) + board.contract[board.contract.length - 1]
+                        + board.contract.substring(2, board.contract.length - 1);
+                }
                 if (contract == 'PASS')
                     board.contract = 'P';
                 if (!/^[P1-7]/.test(contract)) {
@@ -248,15 +252,19 @@ const scraperObject = {
                             break;
                     }
                     let getLeadSolver = async () => {
-                        const res = await axios_1.default.get("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
+                        await axios_1.default.get("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
                             `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
                             `&leader=${constants_1.bboNumtoDir[(constants_1.bboDir[board.contract[2]] + 1) % 4]}` +
                             `&requesttoken=${Date.now()}&uniqueTID=${Date.now() + 3}`, {
                             headers: {
                                 'user-agent': (0, random_useragent_1.getRandom)()
                             }
+                        }).then(res => {
+                            board.leadCost = 13 - res.data.sess.cards.filter(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]].includes(constants_1.cardRank[parsedLin.lead[1]]))[0].score -
+                                board.tricksTaken + board.tricksDiff;
                         }).catch(err => {
                             console.log('DD Solver down');
+                            console.log(link);
                             console.log("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
                                 `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
                                 `&leader=${constants_1.bboNumtoDir[(constants_1.bboDir[board.contract[2]] + 1) % 4]}` +
@@ -269,8 +277,6 @@ const scraperObject = {
                                 }
                             });
                         });
-                        board.leadCost = 13 - (res.data.sess.cards || []).filter(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]].includes(constants_1.cardRank[parsedLin.lead[1]]))[0].score -
-                            board.tricksTaken + board.tricksDiff;
                     };
                     await getLeadSolver();
                 }
@@ -308,7 +314,11 @@ const scraperObject = {
                 result.lin = decodeURIComponent(htmllink.href.slice(59));
                 if (result.lin.length == 0)
                     return result;
-                result.contract = htmllink.text.replace(/[+\-=]+.*/, '');
+                result.contract = htmllink.text.replace(/[+\-=]+.*/, '').toUpperCase();
+                if ('X' == result.contract[2]) {
+                    result.contract = result.contract.substring(0, 2) + result.contract[result.contract.length - 1]
+                        + result.contract.substring(2, result.contract.length - 1);
+                }
                 if (result.contract == 'PASS')
                     result.contract = 'P';
                 if (result.contract != 'P' && /[+\-=]+.*/.test(htmllink.text)) {
@@ -417,15 +427,19 @@ const scraperObject = {
                     board.optimalPoints = parseInt(res.data.scoreNS.substring(3));
                 };
                 let getLeadSolver = async () => {
-                    const res = await axios_1.default.get("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
+                    await axios_1.default.get("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
                         `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
                         `&leader=${constants_1.bboNumtoDir[(constants_1.bboDir[board.contract[2]] + 1) % 4]}` +
                         `&requesttoken=${Date.now()}&uniqueTID=${Date.now() + 3}`, {
                         headers: {
                             'user-agent': (0, random_useragent_1.getRandom)()
                         }
+                    }).then(res => {
+                        board.leadCost = 13 - res.data.sess.cards.filter(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]].includes(constants_1.cardRank[parsedLin.lead[1]]))[0].score -
+                            board.tricksTaken + board.tricksDiff;
                     }).catch(err => {
                         console.log('DD Solver down');
+                        console.log(link);
                         console.log("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
                             `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
                             `&leader=${constants_1.bboNumtoDir[(constants_1.bboDir[board.contract[2]] + 1) % 4]}` +
@@ -438,8 +452,6 @@ const scraperObject = {
                             }
                         });
                     });
-                    board.leadCost = 13 - (res.data.sess.cards || []).filter(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]].includes(constants_1.cardRank[parsedLin.lead[1]]))[0].score -
-                        board.tricksTaken + board.tricksDiff;
                 };
                 await getDDSolver();
                 if (board.contract != 'P') {
