@@ -124,7 +124,7 @@ const scraperObject = {
             board.lin = JSON.parse(xmlParser.toJson(res.data)).lin.$t
           }).catch(err => {
             console.log('BBO down')
-            axios.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
+            return axios.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
               headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/vnd.heroku+json; version=3',
@@ -146,7 +146,7 @@ const scraperObject = {
             console.log('DD Solver down')
             console.log("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
             `${boardInfo.hands.join(' ')}&vul=${boardInfo.vul}&sockref=${Date.now()}&uniqueTID=${Date.now()+3}&_=${Date.now()-10000}`)
-            axios.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
+            return axios.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
               headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/vnd.heroku+json; version=3',
@@ -226,7 +226,7 @@ const scraperObject = {
                 `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
                 `&leader=${bboNumtoDir[(bboDir[board.contract[2]] + 1) % 4]}` +
                 `&requesttoken=${Date.now()}&uniqueTID=${Date.now()+3}`)
-                axios.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
+                return axios.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
                   headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/vnd.heroku+json; version=3',
@@ -355,7 +355,7 @@ const scraperObject = {
               console.log('DD Solver down')
               console.log("https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
               `${parsedLin.hands.join(' ')}&vul=${parsedLin.vul}&sockref=${Date.now()}&uniqueTID=${Date.now()+3}&_=${Date.now()-10000}`)
-              axios.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
+              return axios.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
                 headers: {
                   'Content-Type': 'application/json',
                   'Accept': 'application/vnd.heroku+json; version=3',
@@ -385,7 +385,7 @@ const scraperObject = {
               `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
               `&leader=${bboNumtoDir[(bboDir[board.contract[2]] + 1) % 4]}` +
               `&requesttoken=${Date.now()}&uniqueTID=${Date.now()+3}`)
-              axios.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
+              return axios.delete(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/dynos/worker`, {
                 headers: {
                   'Content-Type': 'application/json',
                   'Accept': 'application/vnd.heroku+json; version=3',
