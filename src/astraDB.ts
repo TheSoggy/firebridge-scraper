@@ -21,7 +21,7 @@ async function insert(boards: Board[]) {
       lin
     ) VALUES (
       ${dealUuid},
-      ${board.lin}
+      '${board.lin}'
     )`
     insertDeal.setCql(queryStr)
     await promisifiedClient.executeQuery(insertDeal)
@@ -49,11 +49,11 @@ async function insert(boards: Board[]) {
         points_diff,
         competitive
       ) VALUES (
-        ${board.playerIds![i]},
+        '${board.playerIds![i]}',
         toTimestamp(now()),
         ${dealUuid},
         ${board.contractLevel},
-        ${board.contract},
+        '${board.contract}',
         ${board.tricksOverContract},
         ${dealType[i]},
         ${board.optimalPoints},
