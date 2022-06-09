@@ -37,6 +37,7 @@ const xml2json_1 = __importDefault(require("xml2json"));
 const fs = __importStar(require("fs"));
 const axios_retry_1 = __importDefault(require("axios-retry"));
 const lodash_1 = __importDefault(require("lodash"));
+const astraDB_1 = __importDefault(require("./astraDB"));
 const constants_1 = require("./constants");
 const pageFunctions_1 = require("./pageFunctions");
 const scraperObject = {
@@ -71,7 +72,7 @@ const scraperObject = {
         });
         // Scraping process
         // Getting all tourneys
-        const urls = await cluster.execute(this.url, async ({ page, data: url }) => {
+        var urls = await cluster.execute(this.url, async ({ page, data: url }) => {
             await (0, pageFunctions_1.disableImgCss)(page);
             await page.goto(url, { waitUntil: 'networkidle0' });
             await page.waitForSelector('#tourneys');
@@ -185,45 +186,45 @@ const scraperObject = {
                         case 'H':
                         case 'S':
                             if (parseInt(board.contract[0]) == 7) {
-                                board.contractLevel = types_1.ContractLevel.GrandSlam;
+                                board.contractLevel = types_1.ContractLevel.GRANDSLAM;
                             }
                             else if (parseInt(board.contract[0]) == 6) {
-                                board.contractLevel = types_1.ContractLevel.Slam;
+                                board.contractLevel = types_1.ContractLevel.SLAM;
                             }
                             else if (parseInt(board.contract[0]) >= 4) {
-                                board.contractLevel = types_1.ContractLevel.Game;
+                                board.contractLevel = types_1.ContractLevel.GAME;
                             }
                             else {
-                                board.contractLevel = types_1.ContractLevel.Partial;
+                                board.contractLevel = types_1.ContractLevel.PARTIAL;
                             }
                             break;
                         case 'C':
                         case 'D':
                             if (parseInt(board.contract[0]) == 7) {
-                                board.contractLevel = types_1.ContractLevel.GrandSlam;
+                                board.contractLevel = types_1.ContractLevel.GRANDSLAM;
                             }
                             else if (parseInt(board.contract[0]) == 6) {
-                                board.contractLevel = types_1.ContractLevel.Slam;
+                                board.contractLevel = types_1.ContractLevel.SLAM;
                             }
                             else if (parseInt(board.contract[0]) == 5) {
-                                board.contractLevel = types_1.ContractLevel.Game;
+                                board.contractLevel = types_1.ContractLevel.GAME;
                             }
                             else {
-                                board.contractLevel = types_1.ContractLevel.Partial;
+                                board.contractLevel = types_1.ContractLevel.PARTIAL;
                             }
                             break;
                         case 'N':
                             if (parseInt(board.contract[0]) == 7) {
-                                board.contractLevel = types_1.ContractLevel.GrandSlam;
+                                board.contractLevel = types_1.ContractLevel.GRANDSLAM;
                             }
                             else if (parseInt(board.contract[0]) == 6) {
-                                board.contractLevel = types_1.ContractLevel.Slam;
+                                board.contractLevel = types_1.ContractLevel.SLAM;
                             }
                             else if (parseInt(board.contract[0]) >= 3) {
-                                board.contractLevel = types_1.ContractLevel.Game;
+                                board.contractLevel = types_1.ContractLevel.GAME;
                             }
                             else {
-                                board.contractLevel = types_1.ContractLevel.Partial;
+                                board.contractLevel = types_1.ContractLevel.PARTIAL;
                             }
                             break;
                     }
@@ -249,7 +250,7 @@ const scraperObject = {
                     await getLeadSolver();
                 }
                 else {
-                    board.contractLevel = types_1.ContractLevel.PassOut;
+                    board.contractLevel = types_1.ContractLevel.PASSOUT;
                 }
             }));
             return boards;
@@ -308,51 +309,51 @@ const scraperObject = {
                         case 'H':
                         case 'S':
                             if (parseInt(board.contract[0]) == 7) {
-                                board.contractLevel = types_1.ContractLevel.GrandSlam;
+                                board.contractLevel = types_1.ContractLevel.GRANDSLAM;
                             }
                             else if (parseInt(board.contract[0]) == 6) {
-                                board.contractLevel = types_1.ContractLevel.Slam;
+                                board.contractLevel = types_1.ContractLevel.SLAM;
                             }
                             else if (parseInt(board.contract[0]) >= 4) {
-                                board.contractLevel = types_1.ContractLevel.Game;
+                                board.contractLevel = types_1.ContractLevel.GAME;
                             }
                             else {
-                                board.contractLevel = types_1.ContractLevel.Partial;
+                                board.contractLevel = types_1.ContractLevel.PARTIAL;
                             }
                             break;
                         case 'C':
                         case 'D':
                             if (parseInt(board.contract[0]) == 7) {
-                                board.contractLevel = types_1.ContractLevel.GrandSlam;
+                                board.contractLevel = types_1.ContractLevel.GRANDSLAM;
                             }
                             else if (parseInt(board.contract[0]) == 6) {
-                                board.contractLevel = types_1.ContractLevel.Slam;
+                                board.contractLevel = types_1.ContractLevel.SLAM;
                             }
                             else if (parseInt(board.contract[0]) == 5) {
-                                board.contractLevel = types_1.ContractLevel.Game;
+                                board.contractLevel = types_1.ContractLevel.GAME;
                             }
                             else {
-                                board.contractLevel = types_1.ContractLevel.Partial;
+                                board.contractLevel = types_1.ContractLevel.PARTIAL;
                             }
                             break;
                         case 'N':
                             if (parseInt(board.contract[0]) == 7) {
-                                board.contractLevel = types_1.ContractLevel.GrandSlam;
+                                board.contractLevel = types_1.ContractLevel.GRANDSLAM;
                             }
                             else if (parseInt(board.contract[0]) == 6) {
-                                board.contractLevel = types_1.ContractLevel.Slam;
+                                board.contractLevel = types_1.ContractLevel.SLAM;
                             }
                             else if (parseInt(board.contract[0]) >= 3) {
-                                board.contractLevel = types_1.ContractLevel.Game;
+                                board.contractLevel = types_1.ContractLevel.GAME;
                             }
                             else {
-                                board.contractLevel = types_1.ContractLevel.Partial;
+                                board.contractLevel = types_1.ContractLevel.PARTIAL;
                             }
                             break;
                     }
                 }
                 else {
-                    board.contractLevel = types_1.ContractLevel.PassOut;
+                    board.contractLevel = types_1.ContractLevel.PASSOUT;
                 }
                 let getDDSolver = async () => {
                     try {
@@ -419,22 +420,35 @@ const scraperObject = {
                 }
             }
             if (dataObj.boards.length > 0) {
-                //console.log(JSON.stringify(dataObj.boards) + "\n")
+                (0, astraDB_1.default)(dataObj.boards);
             }
             else {
                 console.log(`${++failures} no data`);
             }
         };
         console.log(urls.length);
-        let failures = 0;
-        for (let url of urls) {
-            stream.write(url + "\n");
+        lodash_1.default.reverse(urls);
+        if (process.env.LAST_TOURNEY_URL != '') {
+            let idx = lodash_1.default.indexOf(urls, process.env.LAST_TOURNEY_URL);
+            if (idx != -1) {
+                urls = lodash_1.default.drop(urls, idx + 1);
+            }
         }
-        let chunkedUrls = lodash_1.default.chunk(urls, 200);
-        /*for (let chunk of chunkedUrls) {
-          chunk.forEach(url => cluster.queue(url, boardsPromise))
-          await cluster.idle()
-        }*/
+        let failures = 0;
+        let chunkedUrls = lodash_1.default.chunk(urls, 125);
+        for (let chunk of chunkedUrls) {
+            chunk.forEach(url => cluster.queue(url, boardsPromise));
+            await cluster.idle();
+            await axios_1.default.patch(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/config-vars/`, {
+                'LAST_TOURNEY_URL': chunk[chunk.length - 1]
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.heroku+json; version=3',
+                    'Authorization': `Bearer ${process.env.HEROKU_API_TOKEN}`
+                }
+            });
+        }
         await cluster.close();
     }
 };

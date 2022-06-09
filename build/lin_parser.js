@@ -13,6 +13,7 @@ const parseLin = (lin) => {
     if (player_ids === null) {
         return null;
     }
+    // player order is always S,W,N,E
     result.playerIds = player_ids[0].substring(3).split(',')
         .map(player_id => player_id == '~GiB' || player_id.startsWith('~~M') ? 'Robot' : player_id);
     let hands = lin.match(/md\|([^\|]+)/);
