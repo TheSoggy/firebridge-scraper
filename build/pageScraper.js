@@ -98,7 +98,17 @@ const scraperObject = {
             await page.waitForSelector('.bbo_content');
             page.on('console', message => console.log(`${message.type().substring(0, 3).toUpperCase()} ${message.text()}`));
             boards = await page.$$eval('.body > tbody > .tourney', (rows, suits) => rows.map(row => {
-                let board = new types_1.Board();
+                let board = {
+                    contract: '',
+                    score: 0,
+                    lin: '',
+                    tricksOverContract: 0,
+                    leadCost: 0,
+                    tricksDiff: 0,
+                    tricksTaken: 0,
+                    competitive: false,
+                    declarer: ''
+                };
                 let contract = row.querySelector('td.result').textContent;
                 board.contract = contract.replace(/[♣♦♥♠]/, match => suits[match]).replace(/[+\-=]+.*/, '');
                 if (contract == 'PASS')
@@ -268,7 +278,17 @@ const scraperObject = {
                     return '';
             });
             dataObj.boards = await page.$$eval('table.handrecords > tbody > tr > td > a', links => links.map(link => {
-                let result = new types_1.Board();
+                let result = {
+                    contract: '',
+                    score: 0,
+                    lin: '',
+                    tricksOverContract: 0,
+                    leadCost: 0,
+                    tricksDiff: 0,
+                    tricksTaken: 0,
+                    competitive: false,
+                    declarer: ''
+                };
                 let htmllink = link;
                 result.lin = decodeURIComponent(htmllink.href.slice(59));
                 if (result.lin.length == 0)

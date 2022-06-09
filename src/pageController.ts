@@ -1,4 +1,3 @@
-import { Browser } from 'puppeteer';
 import pageScraper from './pageScraper';
 async function scrapeAll(/*browserInstance: Promise<Browser>*/){
   // let browser: Browser;

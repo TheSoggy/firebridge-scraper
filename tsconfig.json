@@ -1,23 +1,19 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "display": "Node 16",
+  "extends": "@tsconfig/node16/tsconfig.json",
   "compilerOptions": {
     "incremental": true,
     "lib": [
-      "es2022",
+      "es2021",
       "DOM"
     ],
     "typeRoots": [
-      "node_modules/@types"
+      "../node_modules/@types"
     ],
-    "module": "commonjs",
-    "target": "es2022",
     "outDir": "build",
     "rootDir": "src",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
+    "preserveConstEnums": true,
     "allowJs": true,
     //"noEmit": true,
     "moduleResolution": "node",

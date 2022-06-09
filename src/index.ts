@@ -1,4 +1,3 @@
-import startBrowser from './browser';
 import scraperController from './pageController';
 
 //Start the browser and create a browser instance

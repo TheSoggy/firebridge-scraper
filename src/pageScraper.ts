@@ -5,7 +5,7 @@ import { Page } from 'puppeteer'
 import puppeteer from 'puppeteer-extra'
 import Stealth from 'puppeteer-extra-plugin-stealth'
 import { Cluster } from 'puppeteer-cluster'
-import { ContractLevel, Board } from './types'
+import { Board, ContractLevel } from './types'
 import xmlParser from 'xml2json'
 import * as fs from 'fs'
 import axiosRetry from 'axios-retry'
@@ -16,7 +16,7 @@ import { disableImgCss, gotoLink, profilePromise } from './pageFunctions'
 
 const scraperObject = {
 	url: 'https://webutil.bridgebase.com/v2/tarchive.php?m=all&d=All%20Tourneys',
-    login: 'https://www.bridgebase.com/myhands/myhands_login.php?t=%2Fmyhands%2Findex.php%3F',
+  login: 'https://www.bridgebase.com/myhands/myhands_login.php?t=%2Fmyhands%2Findex.php%3F',
 	async scrape() {
     puppeteer.use(Stealth())
     const stream = fs.createWriteStream("test19.txt", {flags:'a'})
@@ -75,7 +75,17 @@ const scraperObject = {
         console.log(`${message.type().substring(0, 3).toUpperCase()} ${message.text()}`))
       boards = await page.$$eval('.body > tbody > .tourney',
         (rows, suits: any) => rows.map(row => {
-          let board = new Board()
+          let board: Board = {
+            contract: '',
+            score: 0,
+            lin: '',
+            tricksOverContract: 0,
+            leadCost: 0,
+            tricksDiff: 0,
+            tricksTaken: 0,
+            competitive: false,
+            declarer: ''
+          }
           let contract = row.querySelector('td.result')!.textContent!
           board.contract = contract.replace(/[♣♦♥♠]/, match => suits[match])!.replace(/[+\-=]+.*/, '')!
           if (contract == 'PASS') board.contract = 'P'
@@ -232,7 +242,17 @@ const scraperObject = {
       })
       dataObj.boards = await page.$$eval('table.handrecords > tbody > tr > td > a', 
         links => links.map(link => {
-          let result = new Board()
+          let result: Board = {
+            contract: '',
+            score: 0,
+            lin: '',
+            tricksOverContract: 0,
+            leadCost: 0,
+            tricksDiff: 0,
+            tricksTaken: 0,
+            competitive: false,
+            declarer: ''
+          }
           let htmllink = (<HTMLAnchorElement>link)
           result.lin = decodeURIComponent(htmllink.href.slice(59))
           if (result.lin.length == 0) return result
