@@ -75,7 +75,7 @@ const scraperObject = {
       page.on('console', message =>
         console.log(`${message.type().substring(0, 3).toUpperCase()} ${message.text()}`))
       boards = await page.$$eval('.body > tbody > .tourney',
-        (rows, suits: any) => rows.map(row => {
+        (rows, suits: any) => (rows.map(row => {
           let board: Board = {
             contract: '',
             score: 0,
@@ -111,7 +111,7 @@ const scraperObject = {
           board.score = parseInt(row.querySelector('td.score,td.negscore')!.textContent!)
           board.lin = row.querySelector('td.movie > a[onclick]')!.getAttribute('onclick')!
           return board
-        }).filter(board => board.lin.length > 0), suitSymbols)
+        }) || []).filter(board => board.lin.length > 0), suitSymbols)
       await Promise.all(boards.map(async board => {
         if (board.lin.includes('popuplin')) {
           board.lin = decodeURIComponent(board.lin.slice(13, -39))
@@ -234,7 +234,7 @@ const scraperObject = {
                   }
                 })
               })
-            board.leadCost = 13 - (<any[]>res!.data.sess.cards).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
+            board.leadCost = 13 - ((<any[]>res!.data.sess.cards) || []).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
               board.tricksTaken! + board.tricksDiff!
           }
           await getLeadSolver()
@@ -258,7 +258,7 @@ const scraperObject = {
         } else return ''
       })
       dataObj.boards = await page.$$eval('table.handrecords > tbody > tr > td > a', 
-        links => links.map(link => {
+        links => (links.map(link => {
           let result: Board = {
             contract: '',
             score: 0,
@@ -291,9 +291,9 @@ const scraperObject = {
             }
           }
           return result
-      }).filter(board => board.lin.length > 0))
+      }) || []).filter(board => board.lin.length > 0))
       await page.$$eval('table.handrecords > tbody > tr > td.resultcell + td',
-        cells => cells.map(cell => (<HTMLTableCellElement>cell).textContent!)
+        cells => (cells.map(cell => (<HTMLTableCellElement>cell).textContent!) || [])
         .filter(text => text.length > 0))
         .then(cells => cells
           .forEach((cell, idx) => {
@@ -393,7 +393,7 @@ const scraperObject = {
                 }
               })
             })
-          board.leadCost = 13 - (<any[]>res!.data.sess.cards).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
+          board.leadCost = 13 - ((<any[]>res!.data.sess.cards) || []).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
             board.tricksTaken! + board.tricksDiff!
         }
         await getDDSolver()
