@@ -37,7 +37,6 @@ const stargateClient = new stargate_grpc_node_client_1.StargateClient(process.en
 const promisifiedClient = (0, stargate_grpc_node_client_1.promisifyStargateClient)(stargateClient);
 async function insert(boards) {
     for (let board of boards) {
-        console.log(board.lin);
         const insertDeal = new stargate_grpc_node_client_1.Query();
         const dealUuid = (0, uuid_1.v4)();
         const queryStr = `INSERT INTO bridge.deals (

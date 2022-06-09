@@ -56,7 +56,7 @@ const scraperObject = {
             maxConcurrency: 32,
             retryLimit: 20,
             retryDelay: 2000,
-            timeout: 6000000,
+            timeout: 60000,
             puppeteer: puppeteer_extra_1.default,
             monitor: true,
             puppeteerOptions: {
@@ -496,7 +496,7 @@ const scraperObject = {
             }
         }
         let failures = 0;
-        let chunkedUrls = lodash_1.default.chunk(urls, 125);
+        let chunkedUrls = lodash_1.default.chunk(urls, 50);
         for (let chunk of chunkedUrls) {
             chunk.forEach(url => cluster.queue(url, boardsPromise));
             await cluster.idle();
