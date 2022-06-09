@@ -6,11 +6,15 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node build/index.js",
+    "astra": "node build/astraDB.js",
     "dev": "next dev"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@grpc/grpc-js": "^1.6.7",
+    "@stargate-oss/stargate-grpc-node-client": "^0.2.3",
+    "@types/lodash": "^4.14.182",
     "axios": "^0.27.2",
     "axios-retry": "^3.2.5",
     "dotenv": "^16.0.1",
@@ -22,12 +26,13 @@
     "puppeteer-page-proxy": "^1.2.8",
     "react": "^18.1.0",
     "react-dom": "^18.1.0",
+    "uuid": "^8.3.2",
     "xml2json": "^0.12.0"
   },
   "devDependencies": {
     "@tsconfig/node16": "^1.0.2",
-    "@types/lodash": "^4.14.182",
     "@types/react": "^18.0.9",
+    "@types/uuid": "^8.3.4",
     "@types/xml2json": "^0.11.4",
     "typescript": "^4.6.4"
   }

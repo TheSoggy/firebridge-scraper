@@ -100,6 +100,8 @@ dist
 backend/
 *.txt
 *.cfg
+.yarn/
+.pnp.cjs
 
 # DynamoDB Local files
 .dynamodb/

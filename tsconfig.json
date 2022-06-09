@@ -4,11 +4,14 @@
   "compilerOptions": {
     "incremental": true,
     "lib": [
-      "es2021",
+      "es2022",
       "DOM"
     ],
+    "typeRoots": [
+      "node_modules/@types"
+    ],
     "module": "commonjs",
-    "target": "es2021",
+    "target": "es2022",
     "outDir": "build",
     "rootDir": "src",
     "strict": true,
