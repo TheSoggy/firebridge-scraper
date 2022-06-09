@@ -37,16 +37,19 @@ const stargateClient = new stargate_grpc_node_client_1.StargateClient(process.en
 const promisifiedClient = (0, stargate_grpc_node_client_1.promisifyStargateClient)(stargateClient);
 async function insert(boards) {
     for (let board of boards) {
+        console.log(board.lin);
         const insertDeal = new stargate_grpc_node_client_1.Query();
         const dealUuid = (0, uuid_1.v4)();
         const queryStr = `INSERT INTO bridge.deals (
       deal_id,
       lin
-    ) VALUES (
-      ${dealUuid},
-      "${board.lin}"
-    )`;
+    ) VALUES (${dealUuid}, ?)`;
         insertDeal.setCql(queryStr);
+        const lin = new stargate_grpc_node_client_1.Value();
+        lin.setString(board.lin);
+        const queryValues = new stargate_grpc_node_client_1.Values();
+        queryValues.setValuesList([lin]);
+        insertDeal.setValues(queryValues);
         await promisifiedClient.executeQuery(insertDeal);
         const dealType = [0, 0, 0, 0];
         let declarerIdx = lodash_1.default.indexOf(board.playerIds, board.declarer);
@@ -71,21 +74,34 @@ async function insert(boards) {
         tricks_diff,
         points_diff,
         competitive
-      ) VALUES (
-        '${board.playerIds[i]}',
-        toTimestamp(now()),
-        ${dealUuid},
-        ${board.contractLevel},
-        '${board.contract}',
-        ${board.tricksOverContract},
-        ${dealType[i]},
-        ${board.optimalPoints},
-        ${board.leadCost},
-        ${board.tricksDiff},
-        ${board.pointsDiff},
-        ${board.competitive}
-      )`;
+      ) VALUES (?, toTimestamp(now()), ${dealUuid}, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?)`;
             insertDealByUser.setCql(queryStr);
+            const player_id = new stargate_grpc_node_client_1.Value();
+            player_id.setString(board.playerIds[i]);
+            const contract_level = new stargate_grpc_node_client_1.Value();
+            contract_level.setInt(board.contractLevel);
+            const contract = new stargate_grpc_node_client_1.Value();
+            contract.setString(board.contract);
+            const tricks_over_contract = new stargate_grpc_node_client_1.Value();
+            tricks_over_contract.setInt(board.tricksOverContract);
+            const deal_type = new stargate_grpc_node_client_1.Value();
+            deal_type.setInt(dealType[i]);
+            const optimal_points = new stargate_grpc_node_client_1.Value();
+            optimal_points.setInt(board.optimalPoints);
+            const lead_cost = new stargate_grpc_node_client_1.Value();
+            lead_cost.setInt(board.leadCost);
+            const tricks_diff = new stargate_grpc_node_client_1.Value();
+            tricks_diff.setInt(board.tricksDiff);
+            const points_diff = new stargate_grpc_node_client_1.Value();
+            points_diff.setInt(board.pointsDiff);
+            const competitive = new stargate_grpc_node_client_1.Value();
+            competitive.setBoolean(board.competitive);
+            const queryValues = new stargate_grpc_node_client_1.Values();
+            queryValues.setValuesList([player_id, contract_level, contract,
+                tricks_over_contract, deal_type, optimal_points, lead_cost, tricks_diff,
+                points_diff, competitive]);
+            insertDealByUser.setValues(queryValues);
             await promisifiedClient.executeQuery(insertDealByUser);
         }
     }
