@@ -14,7 +14,6 @@ const promisifiedClient = promisifyStargateClient(stargateClient);
 
 async function insert(boards: Board[]) {
   for (let board of boards) {
-    console.log(board.lin)
     const insertDeal = new Query()
     const dealUuid = uuidv4()
     const queryStr = `INSERT INTO bridge.deals (
