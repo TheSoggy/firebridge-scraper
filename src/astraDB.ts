@@ -1,0 +1,71 @@
+import * as grpc from "@grpc/grpc-js";
+import { StargateClient, Query, StargateBearerToken, Response, promisifyStargateClient, Value, Values, QueryParameters } from "@stargate-oss/stargate-grpc-node-client";
+import { Board } from "./types";
+import { v4 as uuidv4 } from 'uuid';
+import 'dotenv/config'
+import _ from 'lodash'
+
+const bearerToken = new StargateBearerToken(process.env.ASTRA_TOKEN!);
+const credentials = grpc.credentials.combineChannelCredentials(
+  grpc.credentials.createSsl(), bearerToken);
+
+const stargateClient = new StargateClient(process.env.ASTRA_GRPC_ENDPOINT!, credentials);
+const promisifiedClient = promisifyStargateClient(stargateClient);
+
+async function insert(boards: Board[]) {
+  for (let board of boards) {
+    const insertDeal = new Query()
+    const dealUuid = uuidv4()
+    const queryStr = `INSERT INTO bridge.deals (
+      deal_id,
+      lin
+    ) VALUES (
+      ${dealUuid},
+      ${board.lin}
+    )`
+    insertDeal.setCql(queryStr)
+    await promisifiedClient.executeQuery(insertDeal)
+    const dealType: number[] = [0, 0, 0, 0]
+    let declarerIdx = _.indexOf(board.playerIds, board.declarer)
+    if (declarerIdx != -1) {
+      dealType[declarerIdx] = 4
+      for (let i = 1; i < 4; i++) {
+        dealType[(i + declarerIdx) % 4] = i
+      }
+    }
+    for (let i = 0; i < 4; i++) {
+      const insertDealByUser = new Query()
+      const queryStr = `INSERT INTO bridge.deals_by_user (
+        bbo_username,
+        timestamp,
+        deal_id,
+        contract_level,
+        contract,
+        tricks_over_contract,
+        deal_type,
+        optimal_points,
+        lead_cost,
+        tricks_diff,
+        points_diff,
+        competitive
+      ) VALUES (
+        ${board.playerIds![i]},
+        toTimestamp(now()),
+        ${dealUuid},
+        ${board.contractLevel},
+        ${board.contract},
+        ${board.tricksOverContract},
+        ${dealType[i]},
+        ${board.optimalPoints},
+        ${board.leadCost},
+        ${board.tricksDiff},
+        ${board.pointsDiff},
+        ${board.competitive}
+      )`
+      insertDealByUser.setCql(queryStr)
+      await promisifiedClient.executeQuery(insertDealByUser)
+    }
+  }
+}
+
+export default insert
