@@ -170,6 +170,14 @@ const getLeadSolver = (parsedLin, board) => {
 };
 exports.getLeadSolver = getLeadSolver;
 const getDDData = async (boards, fromTraveller) => {
+    if (fromTraveller && boards.length > 0) {
+        let parsedLin = (0, lin_parser_1.default)(boards[0].lin);
+        await (0, exports.getDDSolver)(parsedLin, boards[0]);
+        var tricksDiff = boards[0].tricksDiff;
+        var pointsDiff = boards[0].pointsDiff;
+        var impsDiff = boards[0].impsDiff;
+        var optimalPoints = boards[0].optimalPoints;
+    }
     await Promise.all(boards.map(async (board) => {
         let parsedLin = (0, lin_parser_1.default)(board.lin);
         board.playerIds = parsedLin.playerIds;
@@ -229,6 +237,12 @@ const getDDData = async (boards, fromTraveller) => {
         }
         if (!fromTraveller) {
             await (0, exports.getDDSolver)(parsedLin, board);
+        }
+        else {
+            board.tricksDiff = tricksDiff;
+            board.pointsDiff = pointsDiff;
+            board.impsDiff = impsDiff;
+            board.optimalPoints = optimalPoints;
         }
     }));
     return boards;

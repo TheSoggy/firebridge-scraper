@@ -76,7 +76,7 @@ const scraperObject = {
             await (0, pageFunctions_1.gotoLink)(page, link);
             await page.waitForSelector('.bbo_content');
             page.on('console', message => console.log(`${message.type().substring(0, 3).toUpperCase()} ${message.text()}`));
-            boards = (await page.$$eval('.body > tbody > .tourney', (rows, link) => (rows.map(row => {
+            boards = await page.$$eval('.body > tbody > .tourney', (rows, link) => (rows.map(row => {
                 let board = {
                     contract: '',
                     score: 0,
@@ -97,9 +97,10 @@ const scraperObject = {
                     console.log(link);
                 }
                 return board;
-            }) || []), link)).filter(board => (0, lin_parser_1.default)(board.lin));
+            }) || []), link);
             boards.forEach(board => (0, utils_1.processBoard)(board, board.contract));
             await Promise.all(boards.map(async (board) => (0, pageFunctions_1.getLin)(board)));
+            boards = boards.filter(board => (0, lin_parser_1.default)(board.lin));
             return boards;
         };
         const boardsPromise = async ({ page, data: link }) => {
@@ -145,14 +146,13 @@ const scraperObject = {
                     let people = await page.$$eval('.onesection > .sectiontable > tbody > tr > td > a', links => links.map(link => link.href));
                     Promise.all(people.map(async (person) => {
                         cluster.execute(person, travellerPromise).then(res => {
-                            DDPromises.push((0, utils_1.handleRejection)(new Promise(() => {
-                                if (res.length > 0) {
-                                    (0, pageFunctions_1.getDDData)(res, false).then(updatedResult => (0, astraDB_1.default)(updatedResult, promisifiedClient));
-                                }
-                                else {
-                                    console.log(`${++failures} no data`);
-                                }
-                            })));
+                            if (res.length > 0) {
+                                DDPromises.push((0, utils_1.handleRejection)((0, pageFunctions_1.getDDData)(res, false)
+                                    .then(updatedResult => (0, astraDB_1.default)(updatedResult, promisifiedClient))));
+                            }
+                            else {
+                                console.log(`${++failures} no data`);
+                            }
                         });
                     }));
                 }
@@ -162,14 +162,13 @@ const scraperObject = {
                             return;
                         Promise.all(travellerData.map(async (traveller) => {
                             cluster.execute(traveller, travellerPromise).then(res => {
-                                DDPromises.push((0, utils_1.handleRejection)(new Promise(() => {
-                                    if (res.length > 0) {
-                                        (0, pageFunctions_1.getDDData)(res, false).then(updatedResult => (0, astraDB_1.default)(updatedResult, promisifiedClient));
-                                    }
-                                    else {
-                                        console.log(`${++failures} no data`);
-                                    }
-                                })));
+                                if (res.length > 0) {
+                                    DDPromises.push((0, utils_1.handleRejection)((0, pageFunctions_1.getDDData)(res, true)
+                                        .then(updatedResult => (0, astraDB_1.default)(updatedResult, promisifiedClient))));
+                                }
+                                else {
+                                    console.log(`${++failures} no data`);
+                                }
                             });
                         }));
                     });
@@ -193,14 +192,13 @@ const scraperObject = {
         for (let chunk of chunkedUrls) {
             var DDPromises = [];
             chunk.forEach(url => cluster.execute(url, boardsPromise).then(res => {
-                DDPromises.push((0, utils_1.handleRejection)(new Promise(() => {
-                    if (res.length > 0) {
-                        (0, pageFunctions_1.getDDData)(res, false).then(updatedResult => (0, astraDB_1.default)(updatedResult, promisifiedClient));
-                    }
-                    else {
-                        console.log(`${++failures} no data`);
-                    }
-                })));
+                if (res.length > 0) {
+                    DDPromises.push((0, utils_1.handleRejection)((0, pageFunctions_1.getDDData)(res, false)
+                        .then(updatedResult => (0, astraDB_1.default)(updatedResult, promisifiedClient))));
+                }
+                else {
+                    console.log(`${++failures} no data`);
+                }
             }));
             await cluster.idle();
             await Promise.all(DDPromises);

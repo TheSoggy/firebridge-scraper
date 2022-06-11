@@ -54,7 +54,7 @@ const scraperObject = {
       await page.waitForSelector('.bbo_content')
       page.on('console', message =>
         console.log(`${message.type().substring(0, 3).toUpperCase()} ${message.text()}`))
-      boards = (await page.$$eval('.body > tbody > .tourney',
+      boards = await page.$$eval('.body > tbody > .tourney',
         (rows, link) => (rows.map(row => {
           let board: Board = {
             contract: '',
@@ -75,9 +75,10 @@ const scraperObject = {
             console.log(link)
           }
           return board
-        }) || []), link)).filter(board => parseLin(board.lin))
+        }) || []), link)
       boards.forEach(board => processBoard(board, board.contract))
       await Promise.all(boards.map(async board => getLin(board)))
+      boards = boards.filter(board => parseLin(board.lin))
       return boards
     }
     const boardsPromise = async ({ page, data: link }: { page: Page, data: string }) => {
@@ -128,27 +129,27 @@ const scraperObject = {
           ))
           Promise.all(people.map(async person => {
             cluster.execute(person, travellerPromise).then(res => {
-              DDPromises.push(handleRejection(new Promise<void>(() => {
-                if (res.length > 0) {
-                  getDDData(res, false).then(updatedResult => insert(updatedResult, promisifiedClient))
-                } else {
-                  console.log(`${++failures} no data`)
-                }
-              })))
+              if (res.length > 0) {
+                DDPromises.push(handleRejection(getDDData(res, false)
+                  .then(updatedResult => insert(updatedResult, promisifiedClient))
+                ))
+              } else {
+                console.log(`${++failures} no data`)
+              }
             })
           }))
         } else {
           cluster.execute(dataObj.firstPair, profilePromise).then((travellerData: string[]) => {
-            if (travellerData.length == 0) return   
+            if (travellerData.length == 0) return
             Promise.all(travellerData.map(async traveller => {
               cluster.execute(traveller, travellerPromise).then(res => {
-                DDPromises.push(handleRejection(new Promise<void>(() => {
-                  if (res.length > 0) {
-                    getDDData(res, false).then(updatedResult => insert(updatedResult, promisifiedClient))
-                  } else {
-                    console.log(`${++failures} no data`)
-                  }
-                })))
+                if (res.length > 0) {
+                  DDPromises.push(handleRejection(getDDData(res, true)
+                    .then(updatedResult => insert(updatedResult, promisifiedClient))
+                  ))
+                } else {
+                  console.log(`${++failures} no data`)
+                }
               })
             }))
           })
@@ -173,13 +174,13 @@ const scraperObject = {
     for (let chunk of chunkedUrls) {
       var DDPromises: Promise<void>[] = []
       chunk.forEach(url => cluster.execute(url, boardsPromise).then(res => {
-        DDPromises.push(handleRejection(new Promise<void>(() => {
-          if (res.length > 0) {
-            getDDData(res, false).then(updatedResult => insert(updatedResult, promisifiedClient))
-          } else {
-            console.log(`${++failures} no data`)
-          }
-        })))
+        if (res.length > 0) {
+          DDPromises.push(handleRejection(getDDData(res, false)
+            .then(updatedResult => insert(updatedResult, promisifiedClient))
+          ))
+        } else {
+          console.log(`${++failures} no data`)
+        }
       }))
       await cluster.idle()
       await Promise.all(DDPromises)
