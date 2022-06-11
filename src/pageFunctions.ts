@@ -35,6 +35,7 @@ export const newCluster = async (monitoring: boolean) => {
           "--no-sandbox",
           "--disable-dev-shm-usage",
           "--use-gl=egl",
+          "--single-process"
       ],
       'ignoreHTTPSErrors': true,
     }
