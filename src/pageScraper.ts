@@ -165,7 +165,7 @@ const scraperObject = {
       }
     }
     let failures = 0
-    let chunkedUrls = _.chunk(urls, 80)
+    let chunkedUrls = _.chunk(urls, 50)
     const bearerToken = new StargateBearerToken(process.env.ASTRA_TOKEN!)
     const credentials = grpc.credentials.combineChannelCredentials(
       grpc.credentials.createSsl(), bearerToken)

@@ -12,19 +12,11 @@ import xmlParser from 'xml2json'
 
 puppeteer.use(Stealth())
 
-axiosRetry(axios, {
-  retries: 3,
-  retryDelay: (retryCount) => {
-    console.log(`retry attempt: ${retryCount}`)
-    return 2000
-  },
-  retryCondition: (_error) => true
-})
 
 export const newCluster = async (monitoring: boolean) => {
   const cluster = await Cluster.launch({
     concurrency: Cluster.CONCURRENCY_PAGE,
-    maxConcurrency: 32,
+    maxConcurrency: 25,
     retryLimit: 20,
     retryDelay: 2000,
     timeout: 600000,
@@ -134,6 +126,14 @@ type parsedLin = {
 }
 
 export const DDSolverAPI = (parsedLin: parsedLin) => {
+  axiosRetry(axios, {
+    retries: 3,
+    retryDelay: (retryCount) => {
+      console.log(`retry attempt: ${retryCount}`)
+      return 2000
+    },
+    retryCondition: (_error) => true
+  })
   const url = "https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
     `${parsedLin.hands.join(' ')}&vul=${parsedLin.vul}&sockref=${Date.now()}&uniqueTID=${Date.now()+3}&_=${Date.now()-1000}`
   return axios.get(url, {
@@ -159,6 +159,14 @@ export const getDDSolver = async (parsedLin: parsedLin, board: Board) => {
 }
 
 export const getLeadSolver = (parsedLin: parsedLin, board: Board) => {
+  axiosRetry(axios, {
+    retries: 3,
+    retryDelay: (retryCount) => {
+      console.log(`retry attempt: ${retryCount}`)
+      return 2000
+    },
+    retryCondition: (_error) => true
+  })
   const url = "https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
     `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
     `&leader=${bboNumtoDir[(bboDir[board.contract[2]] + 1) % 4]}` +

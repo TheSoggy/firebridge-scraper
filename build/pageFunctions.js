@@ -15,18 +15,10 @@ const axios_retry_1 = __importDefault(require("axios-retry"));
 const random_useragent_1 = require("random-useragent");
 const xml2json_1 = __importDefault(require("xml2json"));
 puppeteer_extra_1.default.use((0, puppeteer_extra_plugin_stealth_1.default)());
-(0, axios_retry_1.default)(axios_1.default, {
-    retries: 3,
-    retryDelay: (retryCount) => {
-        console.log(`retry attempt: ${retryCount}`);
-        return 2000;
-    },
-    retryCondition: (_error) => true
-});
 const newCluster = async (monitoring) => {
     const cluster = await puppeteer_cluster_1.Cluster.launch({
         concurrency: puppeteer_cluster_1.Cluster.CONCURRENCY_PAGE,
-        maxConcurrency: 32,
+        maxConcurrency: 25,
         retryLimit: 20,
         retryDelay: 2000,
         timeout: 600000,
@@ -128,6 +120,14 @@ const getLin = async (board) => {
 };
 exports.getLin = getLin;
 const DDSolverAPI = (parsedLin) => {
+    (0, axios_retry_1.default)(axios_1.default, {
+        retries: 3,
+        retryDelay: (retryCount) => {
+            console.log(`retry attempt: ${retryCount}`);
+            return 2000;
+        },
+        retryCondition: (_error) => true
+    });
     const url = "https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
         `${parsedLin.hands.join(' ')}&vul=${parsedLin.vul}&sockref=${Date.now()}&uniqueTID=${Date.now() + 3}&_=${Date.now() - 1000}`;
     return axios_1.default.get(url, {
@@ -153,6 +153,14 @@ const getDDSolver = async (parsedLin, board) => {
 };
 exports.getDDSolver = getDDSolver;
 const getLeadSolver = (parsedLin, board) => {
+    (0, axios_retry_1.default)(axios_1.default, {
+        retries: 3,
+        retryDelay: (retryCount) => {
+            console.log(`retry attempt: ${retryCount}`);
+            return 2000;
+        },
+        retryCondition: (_error) => true
+    });
     const url = "https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
         `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
         `&leader=${constants_1.bboNumtoDir[(constants_1.bboDir[board.contract[2]] + 1) % 4]}` +

@@ -184,7 +184,7 @@ const scraperObject = {
             }
         }
         let failures = 0;
-        let chunkedUrls = lodash_1.default.chunk(urls, 80);
+        let chunkedUrls = lodash_1.default.chunk(urls, 50);
         const bearerToken = new stargate_grpc_node_client_1.StargateBearerToken(process.env.ASTRA_TOKEN);
         const credentials = grpc.credentials.combineChannelCredentials(grpc.credentials.createSsl(), bearerToken);
         const stargateClient = new stargate_grpc_node_client_1.StargateClient(process.env.ASTRA_GRPC_ENDPOINT, credentials);
