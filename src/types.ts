@@ -15,6 +15,7 @@ export type Board = {
   leadCost: number
   tricksDiff: number
   pointsDiff?: number
+  impsDiff?: number
   tricksTaken: number
   playerIds?: string[]
   competitive: boolean
