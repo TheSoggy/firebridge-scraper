@@ -76,7 +76,7 @@ const scraperObject = {
             await (0, pageFunctions_1.gotoLink)(page, link);
             await page.waitForSelector('.bbo_content');
             page.on('console', message => console.log(`${message.type().substring(0, 3).toUpperCase()} ${message.text()}`));
-            boards = await page.$$eval('.body > tbody > .tourney', (rows, link) => (rows.map(row => {
+            boards = (await page.$$eval('.body > tbody > .tourney', (rows, link) => (rows.map(row => {
                 let board = {
                     contract: '',
                     score: 0,
@@ -97,7 +97,7 @@ const scraperObject = {
                     console.log(link);
                 }
                 return board;
-            }) || []).filter(board => (0, lin_parser_1.default)(board.lin)), link);
+            }) || []), link)).filter(board => (0, lin_parser_1.default)(board.lin));
             boards.forEach(board => (0, utils_1.processBoard)(board, board.contract));
             await Promise.all(boards.map(async (board) => (0, pageFunctions_1.getLin)(board)));
             return boards;
@@ -114,7 +114,7 @@ const scraperObject = {
                 else
                     return '';
             });
-            dataObj.boards = await page.$$eval('table.handrecords > tbody > tr > td > a', links => (links.map(link => {
+            dataObj.boards = (await page.$$eval('table.handrecords > tbody > tr > td > a', links => (links.map(link => {
                 let result = {
                     contract: '',
                     score: 0,
@@ -132,7 +132,7 @@ const scraperObject = {
                     return result;
                 result.contract = htmllink.text;
                 return result;
-            }) || []).filter(board => (0, lin_parser_1.default)(board.lin)));
+            }) || []))).filter(board => (0, lin_parser_1.default)(board.lin));
             dataObj.boards.forEach(board => (0, utils_1.processBoard)(board, board.contract));
             await page.$$eval('table.handrecords > tbody > tr > td.resultcell + td', cells => (cells.map(cell => cell.textContent) || [])
                 .filter(text => text.length > 0))

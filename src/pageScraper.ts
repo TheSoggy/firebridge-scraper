@@ -54,7 +54,7 @@ const scraperObject = {
       await page.waitForSelector('.bbo_content')
       page.on('console', message =>
         console.log(`${message.type().substring(0, 3).toUpperCase()} ${message.text()}`))
-      boards = await page.$$eval('.body > tbody > .tourney',
+      boards = (await page.$$eval('.body > tbody > .tourney',
         (rows, link) => (rows.map(row => {
           let board: Board = {
             contract: '',
@@ -75,7 +75,7 @@ const scraperObject = {
             console.log(link)
           }
           return board
-        }) || []).filter(board => parseLin(board.lin)), link)
+        }) || []), link)).filter(board => parseLin(board.lin))
       boards.forEach(board => processBoard(board, board.contract))
       await Promise.all(boards.map(async board => getLin(board)))
       return boards
@@ -93,7 +93,7 @@ const scraperObject = {
           return (<HTMLAnchorElement>link).href
         } else return ''
       })
-      dataObj.boards = await page.$$eval('table.handrecords > tbody > tr > td > a', 
+      dataObj.boards = (await page.$$eval('table.handrecords > tbody > tr > td > a', 
         links => (links.map(link => {
           let result: Board = {
             contract: '',
@@ -111,7 +111,7 @@ const scraperObject = {
           if (result.lin.length == 0) return result
           result.contract = htmllink.text
           return result
-      }) || []).filter(board => parseLin(board.lin)))
+      }) || []))).filter(board => parseLin(board.lin))
       dataObj.boards.forEach(board => processBoard(board, board.contract))
       await page.$$eval('table.handrecords > tbody > tr > td.resultcell + td',
         cells => (cells.map(cell => (<HTMLTableCellElement>cell).textContent!) || [])
