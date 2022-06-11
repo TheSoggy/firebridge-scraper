@@ -47,7 +47,7 @@ const scraperObject = {
             },
             retryCondition: (_error) => true
         });
-        const cluster = await (0, pageFunctions_1.newCluster)(true);
+        const cluster = await (0, pageFunctions_1.newCluster)(false);
         // Scraping process
         // Getting all tourneys
         var urls = await cluster.execute(this.url, async ({ page, data: url }) => {
