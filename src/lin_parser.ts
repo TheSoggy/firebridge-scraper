@@ -76,7 +76,7 @@ const parseLin = (lin: string) => {
       result.lead = lead[0].slice(4, -1).toUpperCase()
     }
   } catch (e) {
-    console.log(lin)
+    return null
   }
   return result
 }

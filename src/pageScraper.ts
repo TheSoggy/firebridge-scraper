@@ -7,6 +7,7 @@ import * as grpc from "@grpc/grpc-js";
 import axiosRetry from 'axios-retry'
 import _ from 'lodash'
 import insert from './astraDB'
+import parseLin from './lin_parser'
 import { disableImgCss, gotoLink, profilePromise, newCluster, getLin, getDDData, DDSolverAPI } from './pageFunctions'
 import { processBoard, handleRejection } from './utils'
 import { Cluster } from 'ioredis'
@@ -74,7 +75,7 @@ const scraperObject = {
             console.log(link)
           }
           return board
-        }) || []).filter(board => board.lin.length > 0), link)
+        }) || []).filter(board => parseLin(board.lin)), link)
       boards.forEach(board => processBoard(board, board.contract))
       await Promise.all(boards.map(async board => getLin(board)))
       return boards
@@ -110,7 +111,7 @@ const scraperObject = {
           if (result.lin.length == 0) return result
           result.contract = htmllink.text
           return result
-      }) || []).filter(board => board.lin.length > 0))
+      }) || []).filter(board => parseLin(board.lin)))
       dataObj.boards.forEach(board => processBoard(board, board.contract))
       await page.$$eval('table.handrecords > tbody > tr > td.resultcell + td',
         cells => (cells.map(cell => (<HTMLTableCellElement>cell).textContent!) || [])

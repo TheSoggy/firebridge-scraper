@@ -75,7 +75,7 @@ const parseLin = (lin) => {
         }
     }
     catch (e) {
-        console.log(lin);
+        return null;
     }
     return result;
 };
