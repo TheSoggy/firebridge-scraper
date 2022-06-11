@@ -173,7 +173,7 @@ const scraperObject = {
     const promisifiedClient = promisifyStargateClient(stargateClient)
     for (let chunk of chunkedUrls) {
       var DDPromises: Promise<void>[] = []
-      chunk.forEach(url => cluster.execute(url, boardsPromise).then(res => {
+      await Promise.all(chunk.map(async url => cluster.execute(url, boardsPromise).then(res => {
         if (res.length > 0) {
           DDPromises.push(handleRejection(getDDData(res, false)
             .then(updatedResult => insert(updatedResult, promisifiedClient))
@@ -181,7 +181,7 @@ const scraperObject = {
         } else {
           console.log(`${++failures} no data`)
         }
-      }))
+      })))
       await cluster.idle()
       await Promise.all(DDPromises)
       await axios.patch(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/config-vars/`, {

@@ -191,7 +191,7 @@ const scraperObject = {
         const promisifiedClient = (0, stargate_grpc_node_client_1.promisifyStargateClient)(stargateClient);
         for (let chunk of chunkedUrls) {
             var DDPromises = [];
-            chunk.forEach(url => cluster.execute(url, boardsPromise).then(res => {
+            await Promise.all(chunk.map(async (url) => cluster.execute(url, boardsPromise).then(res => {
                 if (res.length > 0) {
                     DDPromises.push((0, utils_1.handleRejection)((0, pageFunctions_1.getDDData)(res, false)
                         .then(updatedResult => (0, astraDB_1.default)(updatedResult, promisifiedClient))));
@@ -199,7 +199,7 @@ const scraperObject = {
                 else {
                     console.log(`${++failures} no data`);
                 }
-            }));
+            })));
             await cluster.idle();
             await Promise.all(DDPromises);
             await axios_1.default.patch(`https://api.heroku.com/apps/${process.env.HEROKU_APP}/config-vars/`, {
