@@ -128,7 +128,7 @@ const getLin = async (board) => {
 exports.getLin = getLin;
 const DDSolverAPI = (parsedLin) => {
     const url = "https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
-        `${parsedLin.hands.join(' ')}&vul=${parsedLin.vul}&sockref=${Date.now()}&uniqueTID=${Date.now() + 3}&_=${Date.now() - 10000}`;
+        `${parsedLin.hands.join(' ')}&vul=${parsedLin.vul}&sockref=${Date.now()}&uniqueTID=${Date.now() + 3}&_=${Date.now() - 1000}`;
     return axios_1.default.get(url, {
         headers: {
             'user-agent': (0, random_useragent_1.getRandom)()
