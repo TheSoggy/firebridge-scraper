@@ -66,7 +66,7 @@ var solvedBoards = StructType({
 })
 var solvedBoardsPtr = ref.refType(solvedBoards)
 
-var libdds = ffi.Library('./libdds/src/dds.dll', {
+var libdds = ffi.Library('./dds.dll', {
   'CalcAllTablesPBN': [ 'void', [ ddTableDealsPBNPtr, 'int', ArrayType('int'), ddTablesResPtr, allParResultsPtr ] ],
   'SolveAllBoards': [ 'void', [ boardsPtr, solvedBoardsPtr ] ]
 })
