@@ -8,14 +8,18 @@ import axiosRetry from 'axios-retry'
 import _ from 'lodash'
 import insert from './astraDB'
 import parseLin from './lin_parser'
-import { disableImgCss, gotoLink, profilePromise, newCluster, getLin, getDDData, DDSolverAPI } from './pageFunctions'
+import { disableImgCss, gotoLink, profilePromise, newCluster, getLin, getDDData } from './pageFunctions'
 import { processBoard, handleRejection } from './utils'
+import pLimit from 'p-limit'
 import { Cluster } from 'ioredis'
 
 const scraperObject = {
 	url: 'https://webutil.bridgebase.com/v2/tarchive.php?m=all&d=All%20Tourneys',
   login: 'https://www.bridgebase.com/myhands/myhands_login.php?t=%2Fmyhands%2Findex.php%3F',
 	async scrape() {
+    const MAX_SIMULTANEOUS_API_CALLS = 1
+    const ddApiLimit = pLimit(MAX_SIMULTANEOUS_API_CALLS)
+    const leadApiLimit = pLimit(MAX_SIMULTANEOUS_API_CALLS)
     axiosRetry(axios, {
       retries: 3,
       retryDelay: (retryCount) => {
@@ -130,7 +134,7 @@ const scraperObject = {
           Promise.all(people.map(async person => {
             cluster.execute(person, travellerPromise).then(res => {
               if (res.length > 0) {
-                DDPromises.push(handleRejection(getDDData(res, false)
+                DDPromises.push(handleRejection(getDDData(res, false, ddApiLimit, leadApiLimit)
                   .then(updatedResult => insert(updatedResult, promisifiedClient))
                 ))
               } else {
@@ -144,7 +148,7 @@ const scraperObject = {
             Promise.all(travellerData.map(async traveller => {
               cluster.execute(traveller, travellerPromise).then(res => {
                 if (res.length > 0) {
-                  DDPromises.push(handleRejection(getDDData(res, true)
+                  DDPromises.push(handleRejection(getDDData(res, true, ddApiLimit, leadApiLimit)
                     .then(updatedResult => insert(updatedResult, promisifiedClient))
                   ))
                 } else {
@@ -175,7 +179,7 @@ const scraperObject = {
       var DDPromises: Promise<void>[] = []
       chunk.forEach(url => cluster.execute(url, boardsPromise).then(res => {
         if (res.length > 0) {
-          DDPromises.push(handleRejection(getDDData(res, false)
+          DDPromises.push(handleRejection(getDDData(res, false, ddApiLimit, leadApiLimit)
             .then(updatedResult => insert(updatedResult, promisifiedClient))
           ))
         } else {

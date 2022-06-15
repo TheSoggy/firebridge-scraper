@@ -36,10 +36,14 @@ const astraDB_1 = __importDefault(require("./astraDB"));
 const lin_parser_1 = __importDefault(require("./lin_parser"));
 const pageFunctions_1 = require("./pageFunctions");
 const utils_1 = require("./utils");
+const p_limit_1 = __importDefault(require("p-limit"));
 const scraperObject = {
     url: 'https://webutil.bridgebase.com/v2/tarchive.php?m=all&d=All%20Tourneys',
     login: 'https://www.bridgebase.com/myhands/myhands_login.php?t=%2Fmyhands%2Findex.php%3F',
     async scrape() {
+        const MAX_SIMULTANEOUS_API_CALLS = 1;
+        const ddApiLimit = (0, p_limit_1.default)(MAX_SIMULTANEOUS_API_CALLS);
+        const leadApiLimit = (0, p_limit_1.default)(MAX_SIMULTANEOUS_API_CALLS);
         (0, axios_retry_1.default)(axios_1.default, {
             retries: 3,
             retryDelay: (retryCount) => {
@@ -147,7 +151,7 @@ const scraperObject = {
                     Promise.all(people.map(async (person) => {
                         cluster.execute(person, travellerPromise).then(res => {
                             if (res.length > 0) {
-                                DDPromises.push((0, utils_1.handleRejection)((0, pageFunctions_1.getDDData)(res, false)
+                                DDPromises.push((0, utils_1.handleRejection)((0, pageFunctions_1.getDDData)(res, false, ddApiLimit, leadApiLimit)
                                     .then(updatedResult => (0, astraDB_1.default)(updatedResult, promisifiedClient))));
                             }
                             else {
@@ -163,7 +167,7 @@ const scraperObject = {
                         Promise.all(travellerData.map(async (traveller) => {
                             cluster.execute(traveller, travellerPromise).then(res => {
                                 if (res.length > 0) {
-                                    DDPromises.push((0, utils_1.handleRejection)((0, pageFunctions_1.getDDData)(res, true)
+                                    DDPromises.push((0, utils_1.handleRejection)((0, pageFunctions_1.getDDData)(res, true, ddApiLimit, leadApiLimit)
                                         .then(updatedResult => (0, astraDB_1.default)(updatedResult, promisifiedClient))));
                                 }
                                 else {
@@ -193,7 +197,7 @@ const scraperObject = {
             var DDPromises = [];
             chunk.forEach(url => cluster.execute(url, boardsPromise).then(res => {
                 if (res.length > 0) {
-                    DDPromises.push((0, utils_1.handleRejection)((0, pageFunctions_1.getDDData)(res, false)
+                    DDPromises.push((0, utils_1.handleRejection)((0, pageFunctions_1.getDDData)(res, false, ddApiLimit, leadApiLimit)
                         .then(updatedResult => (0, astraDB_1.default)(updatedResult, promisifiedClient))));
                 }
                 else {

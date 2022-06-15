@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node build/index.js",
-    "astra": "node build/astraDB.js",
+    "astra": "node build/leaderboard.js",
+    "ddsolver": "node build/ddSolver.js",
     "dev": "next dev"
   },
   "author": "",
@@ -18,8 +19,11 @@
     "axios": "^0.27.2",
     "axios-retry": "^3.2.5",
     "dotenv": "^16.0.1",
+    "ffi-napi": "^4.0.3",
     "ioredis": "^5.0.6",
     "lodash": "^4.17.21",
+    "node-gyp": "^9.0.0",
+    "p-limit": "^3.1.0",
     "puppeteer": "^14.3.0",
     "puppeteer-cluster": "^0.23.0",
     "puppeteer-extra": "^3.2.3",
@@ -28,11 +32,15 @@
     "random-useragent": "^0.5.0",
     "react": "^18.1.0",
     "react-dom": "^18.1.0",
+    "ref-array-napi": "^1.2.2",
+    "ref-napi": "^3.0.3",
+    "ref-struct-napi": "^1.1.1",
     "uuid": "^8.3.2",
     "xml2json": "^0.12.0"
   },
   "devDependencies": {
     "@tsconfig/node16": "^1.0.2",
+    "@types/ffi-napi": "^4.0.5",
     "@types/random-useragent": "^0.3.1",
     "@types/react": "^18.0.9",
     "@types/uuid": "^8.3.4",

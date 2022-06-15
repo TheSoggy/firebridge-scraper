@@ -9,9 +9,9 @@ import axios from 'axios'
 import axiosRetry from 'axios-retry'
 import { getRandom } from 'random-useragent'
 import xmlParser from 'xml2json'
+import pLimit from 'p-limit'
 
 puppeteer.use(Stealth())
-
 
 export const newCluster = async (monitoring: boolean) => {
   const cluster = await Cluster.launch({
@@ -104,6 +104,14 @@ export const getLin = async (board: Board) => {
   if (board.lin.includes('popuplin')) {
     board.lin = decodeURIComponent(board.lin.slice(13, -39))
   } else if (board.lin.includes('popup')) {
+    axiosRetry(axios, {
+      retries: 3,
+      retryDelay: (retryCount) => {
+        console.log(`retry attempt: ${retryCount}`)
+        return 2000
+      },
+      retryCondition: (_error) => true
+    })
     await axios.get(`https://webutil.bridgebase.com/v2/mh_handxml.php?id=${board.lin.slice(12, -39)}`, {
       headers: {
         'user-agent': getRandom()
@@ -125,7 +133,7 @@ type parsedLin = {
   lead: string
 }
 
-export const DDSolverAPI = (parsedLin: parsedLin) => {
+export const DDSolverAPI = (parsedLin: parsedLin, ddApiLimit: pLimit.Limit) => {
   axiosRetry(axios, {
     retries: 3,
     retryDelay: (retryCount) => {
@@ -136,18 +144,18 @@ export const DDSolverAPI = (parsedLin: parsedLin) => {
   })
   const url = "https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
     `${parsedLin.hands.join(' ')}&vul=${parsedLin.vul}&sockref=${Date.now()}&uniqueTID=${Date.now()+3}&_=${Date.now()-1000}`
-  return axios.get(url, {
+  return ddApiLimit(() => axios.get(url, {
     headers: {
       'user-agent': getRandom()
     }
   }).catch(err => {
     console.log('DD Solver down')
     return restartWorker()
-  })
+  }))
 }
 
-export const getDDSolver = async (parsedLin: parsedLin, board: Board) => {
-  const res = await DDSolverAPI(parsedLin)
+export const getDDSolver = async (parsedLin: parsedLin, board: Board, ddApiLimit: pLimit.Limit) => {
+  const res = await DDSolverAPI(parsedLin, ddApiLimit)
   if (board.contract != 'P') {
     board.tricksDiff = board.tricksTaken! -
       parseInt(res!.data.sess.ddtricks[5 * ddsDir[board.contract[2]] + ddsContractSuits[board.contract[1]]], 16)
@@ -158,7 +166,7 @@ export const getDDSolver = async (parsedLin: parsedLin, board: Board) => {
   board.optimalPoints = parseInt(res!.data.scoreNS.substring(3))
 }
 
-export const getLeadSolver = (parsedLin: parsedLin, board: Board) => {
+export const getLeadSolver = (parsedLin: parsedLin, board: Board, leadApiLimit: pLimit.Limit) => {
   axiosRetry(axios, {
     retries: 3,
     retryDelay: (retryCount) => {
@@ -171,7 +179,7 @@ export const getLeadSolver = (parsedLin: parsedLin, board: Board) => {
     `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
     `&leader=${bboNumtoDir[(bboDir[board.contract[2]] + 1) % 4]}` +
     `&requesttoken=${Date.now()}&uniqueTID=${Date.now()+3}`
-  return axios.get(url, {
+  return leadApiLimit(() => axios.get(url, {
       headers: {
         'user-agent': getRandom()
       }
@@ -181,13 +189,13 @@ export const getLeadSolver = (parsedLin: parsedLin, board: Board) => {
     }).catch(err => {
       console.log('DD Solver down')
       return restartWorker()
-    })
+    }))
 }
 
-export const getDDData = async (boards: Board[], fromTraveller: boolean) => {
+export const getDDData = async (boards: Board[], fromTraveller: boolean, ddApiLimit: pLimit.Limit, leadApiLimit: pLimit.Limit) => {
   if (fromTraveller && boards.length > 0) {
     let parsedLin = parseLin(boards[0].lin)!
-    await getDDSolver(parsedLin, boards[0])
+    await getDDSolver(parsedLin, boards[0], ddApiLimit)
     var tricksDiff = boards[0].tricksDiff
     var pointsDiff = boards[0].pointsDiff
     var impsDiff = boards[0].impsDiff
@@ -236,12 +244,12 @@ export const getDDData = async (boards: Board[], fromTraveller: boolean) => {
           }
           break
       }
-      await getLeadSolver(parsedLin, board)
+      await getLeadSolver(parsedLin, board, leadApiLimit)
     } else {
       board.contractLevel = ContractLevel.PASSOUT
     }
     if (!fromTraveller) {
-      await getDDSolver(parsedLin, board)
+      await getDDSolver(parsedLin, board, ddApiLimit)
     } else {
       board.tricksDiff = tricksDiff
       board.pointsDiff = pointsDiff

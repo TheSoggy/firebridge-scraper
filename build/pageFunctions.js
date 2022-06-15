@@ -106,6 +106,14 @@ const getLin = async (board) => {
         board.lin = decodeURIComponent(board.lin.slice(13, -39));
     }
     else if (board.lin.includes('popup')) {
+        (0, axios_retry_1.default)(axios_1.default, {
+            retries: 3,
+            retryDelay: (retryCount) => {
+                console.log(`retry attempt: ${retryCount}`);
+                return 2000;
+            },
+            retryCondition: (_error) => true
+        });
         await axios_1.default.get(`https://webutil.bridgebase.com/v2/mh_handxml.php?id=${board.lin.slice(12, -39)}`, {
             headers: {
                 'user-agent': (0, random_useragent_1.getRandom)()
@@ -119,7 +127,7 @@ const getLin = async (board) => {
     }
 };
 exports.getLin = getLin;
-const DDSolverAPI = (parsedLin) => {
+const DDSolverAPI = (parsedLin, ddApiLimit) => {
     (0, axios_retry_1.default)(axios_1.default, {
         retries: 3,
         retryDelay: (retryCount) => {
@@ -130,18 +138,18 @@ const DDSolverAPI = (parsedLin) => {
     });
     const url = "https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
         `${parsedLin.hands.join(' ')}&vul=${parsedLin.vul}&sockref=${Date.now()}&uniqueTID=${Date.now() + 3}&_=${Date.now() - 1000}`;
-    return axios_1.default.get(url, {
+    return ddApiLimit(() => axios_1.default.get(url, {
         headers: {
             'user-agent': (0, random_useragent_1.getRandom)()
         }
     }).catch(err => {
         console.log('DD Solver down');
         return (0, exports.restartWorker)();
-    });
+    }));
 };
 exports.DDSolverAPI = DDSolverAPI;
-const getDDSolver = async (parsedLin, board) => {
-    const res = await (0, exports.DDSolverAPI)(parsedLin);
+const getDDSolver = async (parsedLin, board, ddApiLimit) => {
+    const res = await (0, exports.DDSolverAPI)(parsedLin, ddApiLimit);
     if (board.contract != 'P') {
         board.tricksDiff = board.tricksTaken -
             parseInt(res.data.sess.ddtricks[5 * constants_1.ddsDir[board.contract[2]] + constants_1.ddsContractSuits[board.contract[1]]], 16);
@@ -152,7 +160,7 @@ const getDDSolver = async (parsedLin, board) => {
     board.optimalPoints = parseInt(res.data.scoreNS.substring(3));
 };
 exports.getDDSolver = getDDSolver;
-const getLeadSolver = (parsedLin, board) => {
+const getLeadSolver = (parsedLin, board, leadApiLimit) => {
     (0, axios_retry_1.default)(axios_1.default, {
         retries: 3,
         retryDelay: (retryCount) => {
@@ -165,7 +173,7 @@ const getLeadSolver = (parsedLin, board) => {
         `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
         `&leader=${constants_1.bboNumtoDir[(constants_1.bboDir[board.contract[2]] + 1) % 4]}` +
         `&requesttoken=${Date.now()}&uniqueTID=${Date.now() + 3}`;
-    return axios_1.default.get(url, {
+    return leadApiLimit(() => axios_1.default.get(url, {
         headers: {
             'user-agent': (0, random_useragent_1.getRandom)()
         }
@@ -175,13 +183,13 @@ const getLeadSolver = (parsedLin, board) => {
     }).catch(err => {
         console.log('DD Solver down');
         return (0, exports.restartWorker)();
-    });
+    }));
 };
 exports.getLeadSolver = getLeadSolver;
-const getDDData = async (boards, fromTraveller) => {
+const getDDData = async (boards, fromTraveller, ddApiLimit, leadApiLimit) => {
     if (fromTraveller && boards.length > 0) {
         let parsedLin = (0, lin_parser_1.default)(boards[0].lin);
-        await (0, exports.getDDSolver)(parsedLin, boards[0]);
+        await (0, exports.getDDSolver)(parsedLin, boards[0], ddApiLimit);
         var tricksDiff = boards[0].tricksDiff;
         var pointsDiff = boards[0].pointsDiff;
         var impsDiff = boards[0].impsDiff;
@@ -239,13 +247,13 @@ const getDDData = async (boards, fromTraveller) => {
                     }
                     break;
             }
-            await (0, exports.getLeadSolver)(parsedLin, board);
+            await (0, exports.getLeadSolver)(parsedLin, board, leadApiLimit);
         }
         else {
             board.contractLevel = types_1.ContractLevel.PASSOUT;
         }
         if (!fromTraveller) {
-            await (0, exports.getDDSolver)(parsedLin, board);
+            await (0, exports.getDDSolver)(parsedLin, board, ddApiLimit);
         }
         else {
             board.tricksDiff = tricksDiff;
