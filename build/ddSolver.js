@@ -8,6 +8,7 @@ const ref_napi_1 = __importDefault(require("ref-napi"));
 const ref_struct_napi_1 = __importDefault(require("ref-struct-napi"));
 const ref_array_napi_1 = __importDefault(require("ref-array-napi"));
 const lodash_1 = __importDefault(require("lodash"));
+const path_1 = __importDefault(require("path"));
 var ddTableDealPBN = (0, ref_struct_napi_1.default)({
     cards: (0, ref_array_napi_1.default)('char', 80)
 });
@@ -60,7 +61,7 @@ var solvedBoards = (0, ref_struct_napi_1.default)({
     solvedBoard: (0, ref_array_napi_1.default)(futureTricks, 200)
 });
 var solvedBoardsPtr = ref_napi_1.default.refType(solvedBoards);
-var libdds = ffi_napi_1.default.Library('../libdds/src/libdds.so', {
+var libdds = ffi_napi_1.default.Library(path_1.default.join(process.cwd(), 'libdds/src/libdds.so'), {
     'CalcAllTablesPBN': ['void', [ddTableDealsPBNPtr, 'int', (0, ref_array_napi_1.default)('int'), ddTablesResPtr, allParResultsPtr]],
     'SolveAllBoards': ['void', [boardsPtr, solvedBoardsPtr]]
 });

@@ -3,6 +3,7 @@ import ref  from 'ref-napi'
 import StructType from 'ref-struct-napi'
 import ArrayType from "ref-array-napi"
 import _ from 'lodash'
+import path from 'path'
 
 var ddTableDealPBN = StructType({
   cards: ArrayType('char', 80)
@@ -66,7 +67,7 @@ var solvedBoards = StructType({
 })
 var solvedBoardsPtr = ref.refType(solvedBoards)
 
-var libdds = ffi.Library('../libdds/src/libdds.so', {
+var libdds = ffi.Library(path.join(process.cwd(), 'libdds/src/libdds.so'), {
   'CalcAllTablesPBN': [ 'void', [ ddTableDealsPBNPtr, 'int', ArrayType('int'), ddTablesResPtr, allParResultsPtr ] ],
   'SolveAllBoards': [ 'void', [ boardsPtr, solvedBoardsPtr ] ]
 })
