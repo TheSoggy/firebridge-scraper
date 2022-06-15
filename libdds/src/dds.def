@@ -1,0 +1,62 @@
+LIBRARY "dds.dll" BASE=0x00000003ab520000
+EXPORTS
+    AnalyseAllPlaysBin @1
+    AnalyseAllPlaysBin@16 = AnalyseAllPlaysBin @2
+    AnalyseAllPlaysPBN @3
+    AnalyseAllPlaysPBN16 = AnalyseAllPlaysPBN @4
+    AnalysePlayBin @5
+    AnalysePlayBin@524 = AnalysePlayBin @6
+    AnalysePlayPBN @7
+    AnalysePlayPBN@230 = AnalysePlayPBN @8
+    CalcAllTables @9
+    CalcAllTables@20 = CalcAllTables @10
+    CalcAllTablesPBN @11
+    CalcAllTablesPBN@20 = CalcAllTablesPBN @12
+    CalcDDtable @13
+    CalcDDtable@68 = CalcDDtable @14
+    CalcDDtablePBN @15
+    CalcDDtablePBN@84 = CalcDDtablePBN @16
+    CalcPar @17
+    CalcPar@76 = CalcPar @18
+    CalcParPBN @19
+    CalcParPBN@92 = CalcParPBN @20
+    ConvertToDealerTextFormat @21
+    ConvertToDealerTextFormat@8 = ConvertToDealerTextFormat @22
+    ConvertToSidesTextFormat @23
+    ConvertToSidesTextFormat@8 = ConvertToSidesTextFormat @24
+    DealerPar @25
+    DealerPar@16 = DealerPar @26
+    DealerParBin @27
+    DealerParBin@12 = DealerParBin @28
+    ErrorMessage @29
+    ErrorMessage@8 = ErrorMessage @30
+    FreeMemory @31
+    FreeMemory@0 = FreeMemory @32
+    GetDDSInfo @33
+    GetDDSInfo@4 = GetDDSInfo @34
+    Par @35
+    Par@12 = Par @36
+    SetMaxThreads @37
+    SetMaxThreads@4 = SetMaxThreads @38
+    SetResources @39
+    SetResources@8 = SetResources @40
+    SetThreading @41
+    SetThreading@4 = SetThreading @42
+    SidesPar @43
+    SidesPar@12 = SidesPar @44
+    SidesParBin @45
+    SidesParBin@12 = SidesParBin @46
+    SolveAllBoards @47
+    SolveAllBoards@8 = SolveAllBoards @48
+    SolveAllBoardsBin @49
+    SolveAllBoardsBin@8 = SolveAllBoardsBin @50
+    SolveAllChunks @51
+    SolveAllChunks@12 = SolveAllChunks @52
+    SolveAllChunksBin @53
+    SolveAllChunksBin@12 = SolveAllChunksBin @54
+    SolveAllChunksPBN @55
+    SolveAllChunksPBN@12 = SolveAllChunksPBN @56
+    SolveBoard @57
+    SolveBoard@116 = SolveBoard @58
+    SolveBoardPBN @59
+    SolveBoardPBN@132 = SolveBoardPBN @60
