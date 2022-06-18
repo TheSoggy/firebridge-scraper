@@ -308,9 +308,9 @@ const getDDData = async (boards, fromTraveller) => {
         }
         if (res.leadData) {
             console.log('solveLead');
-            for (const idx of leadSolverBoardIdx) {
+            for (const [i, idx] of leadSolverBoardIdx.entries()) {
                 let parsedLin = (0, lin_parser_1.default)(boards[idx].lin);
-                boards[idx].leadCost = 13 - res.leadData.filter(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]].includes(constants_1.cardRank[parsedLin.lead[1]]))[0].score -
+                boards[idx].leadCost = 13 - res.leadData[i].filter(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]].includes(constants_1.cardRank[parsedLin.lead[1]]))[0].score -
                     boards[idx].tricksTaken + boards[idx].tricksDiff;
             }
         }

@@ -154,11 +154,9 @@ exports.default = (solveDD, solveLead) => {
                         });
                     }
                     cards[cards.length - 1].values[board.suit[j]].push(board.rank[j] - 2);
-                    if (res.length > 0) {
-                        res.forEach(card => {
-                            cards[cards.length - 1].values[board.suit[j]].push(card);
-                        });
-                    }
+                    res.forEach(card => {
+                        cards[cards.length - 1].values[board.suit[j]].push(card);
+                    });
                 }
                 res.leadData.push(cards);
             }
