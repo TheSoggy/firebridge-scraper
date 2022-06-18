@@ -31,8 +31,7 @@ export const newCluster = async (monitoring: boolean) => {
         "--use-gl=egl",
         "--no-zygote",
       ],
-      'ignoreHTTPSErrors': true,
-      'executablePath': '/usr/bin/chromium-browser',
+      'ignoreHTTPSErrors': true
     }
   })
   cluster.on('taskerror', (err, data) => {
