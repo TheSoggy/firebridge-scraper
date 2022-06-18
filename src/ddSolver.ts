@@ -68,13 +68,13 @@ var solvedBoards = StructType({
 })
 var solvedBoardsPtr = ref.refType(solvedBoards)
 
-var libdds = ffi.Library(path.join(process.cwd(), 'libdds/src/libdds.so'), {
-  'CalcAllTablesPBN': [ 'int', [ ddTableDealsPBNPtr, 'int', ArrayType('int'), ddTablesResPtr, allParResultsPtr ] ],
-  'SolveAllBoards': [ 'int', [ boardsPBNPtr, solvedBoardsPtr ] ]
-})
-
 parentPort!.on('message', workerData => {
   
+  var libdds = ffi.Library(path.join(process.cwd(), 'libdds/src/libdds.so'), {
+    'CalcAllTablesPBN': [ 'int', [ ddTableDealsPBNPtr, 'int', ArrayType('int'), ddTablesResPtr, allParResultsPtr ] ],
+    'SolveAllBoards': [ 'int', [ boardsPBNPtr, solvedBoardsPtr ] ]
+  })
+
   type boardData = {
     ddTricks: number[][],
     score: string

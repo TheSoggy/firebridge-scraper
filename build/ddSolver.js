@@ -62,11 +62,11 @@ var solvedBoards = (0, ref_struct_napi_1.default)({
     solvedBoard: (0, ref_array_napi_1.default)(futureTricks, 200)
 });
 var solvedBoardsPtr = ref_napi_1.default.refType(solvedBoards);
-var libdds = ffi_napi_1.default.Library(path_1.default.join(process.cwd(), 'libdds/src/libdds.so'), {
-    'CalcAllTablesPBN': ['int', [ddTableDealsPBNPtr, 'int', (0, ref_array_napi_1.default)('int'), ddTablesResPtr, allParResultsPtr]],
-    'SolveAllBoards': ['int', [boardsPBNPtr, solvedBoardsPtr]]
-});
 worker_threads_1.parentPort.on('message', workerData => {
+    var libdds = ffi_napi_1.default.Library(path_1.default.join(process.cwd(), 'libdds/src/libdds.so'), {
+        'CalcAllTablesPBN': ['int', [ddTableDealsPBNPtr, 'int', (0, ref_array_napi_1.default)('int'), ddTablesResPtr, allParResultsPtr]],
+        'SolveAllBoards': ['int', [boardsPBNPtr, solvedBoardsPtr]]
+    });
     let res = {};
     if (workerData.solveDD) {
         res.ddData = [[], [], [], []];
