@@ -9,8 +9,7 @@ import axios from 'axios'
 import axiosRetry from 'axios-retry'
 import { getRandom } from 'random-useragent'
 import xmlParser from 'xml2json'
-import { isMainThread } from 'worker_threads'
-import { StaticPool } from 'node-worker-threads-pool'
+import solve from './ddSolver'
 
 puppeteer.use(Stealth())
 
@@ -186,7 +185,7 @@ type parsedLin = {
     }))
 }*/
 
-export const getDDData = async (boards: Board[], fromTraveller: boolean, pool: StaticPool<any, any>) => {
+export const getDDData = async (boards: Board[], fromTraveller: boolean) => {
   if (boards.length == 0) return boards
   const handsByVul: string[][] = [[],[],[],[]]
   const idxByVul: number[][] = [[],[],[],[]]
@@ -201,17 +200,16 @@ export const getDDData = async (boards: Board[], fromTraveller: boolean, pool: S
     let parsedLin = parseLin(boards[0].lin)!
     const hands = "W:" + parsedLin.hands.join(' ')
     handsByVul[parsedLin.vul].push(hands)
-    const res = await pool.exec({ solveDD: handsByVul })
+    const res = solve(handsByVul, undefined)
     if (res.ddData) {
-      console.log('solveDD')
-      /*if (boards[0].contract != 'P') {
+      if (boards[0].contract != 'P') {
         boards[0].tricksDiff = boards[0].tricksTaken! -
-          parseInt(res.ddData[parsedLin.vul][0].ddTricks[ddsDir[boards[0].contract[2]]][ddsContractSuits[boards[0].contract[1]]], 16)
+          res.ddData[parsedLin.vul][0].ddTricks[ddsDir[boards[0].contract[2]]][ddsContractSuits[boards[0].contract[1]]]
       }
       boards[0].pointsDiff = boards[0].score -
         parseInt(res.ddData[parsedLin.vul][0].score)
       boards[0].impsDiff = pointsToImp(boards[0].pointsDiff)
-      boards[0].optimalPoints = parseInt(res.ddData[parsedLin.vul][0].score)*/
+      boards[0].optimalPoints = parseInt(res.ddData[parsedLin.vul][0].score)
     }
     var tricksDiff = boards[0].tricksDiff
     var pointsDiff = boards[0].pointsDiff!
@@ -281,44 +279,39 @@ export const getDDData = async (boards: Board[], fromTraveller: boolean, pool: S
       idxByVul[parsedLin.vul].push(idx)
     }
   }
-  if (isMainThread) {
-    if (fromTraveller) {
-      const res = await pool.exec({ solveLead: leadSolverBoards })
-      if (res.leadData) {
-        console.log('solveLead')
-        for (const idx of leadSolverBoardIdx) {
-          let parsedLin = parseLin(boards[idx].lin)!
-          boards[idx].leadCost = 13 - (<any[]>res.leadData).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
-            boards[idx].tricksTaken! + boards[idx].tricksDiff!
-        }
+  if (fromTraveller) {
+    const res = solve(undefined, leadSolverBoards)
+    if (res.leadData) {
+      console.log('solveLead')
+      for (const idx of leadSolverBoardIdx) {
+        let parsedLin = parseLin(boards[idx].lin)!
+        boards[idx].leadCost = 13 - (<any[]>res.leadData).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
+          boards[idx].tricksTaken! + boards[idx].tricksDiff!
       }
-    } else {
-      const res = await pool.exec({ 
-        solveDD: handsByVul,
-        solveLead: leadSolverBoards
-      })
-      if (res.ddData) {
-        console.log('solveDD')
-        for (let i = 0; i < 4; i++) {
-          for (let j = 0; j < handsByVul[i].length; j++) {
-            if (boards[idxByVul[i][j]].contract != 'P') {
-              boards[idxByVul[i][j]].tricksDiff = boards[idxByVul[i][j]].tricksTaken! -
-                parseInt(res.ddData[i][j].ddTricks[ddsDir[boards[idxByVul[i][j]].contract[2]]][ddsContractSuits[boards[idxByVul[i][j]].contract[1]]], 16)
-            }
-            boards[idxByVul[i][j]].pointsDiff = boards[idxByVul[i][j]].score -
-              parseInt(res.ddData[i][j].score)
-            boards[idxByVul[i][j]].impsDiff = pointsToImp(boards[idxByVul[i][j]].pointsDiff!)
-            boards[idxByVul[i][j]].optimalPoints = parseInt(res.ddData[i][j].score)
+    }
+  } else {
+    const res = solve(handsByVul, leadSolverBoards)
+    if (res.ddData) {
+      console.log('solveDD')
+      for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < handsByVul[i].length; j++) {
+          if (boards[idxByVul[i][j]].contract != 'P') {
+            boards[idxByVul[i][j]].tricksDiff = boards[idxByVul[i][j]].tricksTaken! -
+              res.ddData[i][j].ddTricks[ddsDir[boards[idxByVul[i][j]].contract[2]]][ddsContractSuits[boards[idxByVul[i][j]].contract[1]]]
           }
+          boards[idxByVul[i][j]].pointsDiff = boards[idxByVul[i][j]].score -
+            parseInt(res.ddData[i][j].score)
+          boards[idxByVul[i][j]].impsDiff = pointsToImp(boards[idxByVul[i][j]].pointsDiff!)
+          boards[idxByVul[i][j]].optimalPoints = parseInt(res.ddData[i][j].score)
         }
       }
-      if (res.leadData) {
-        console.log('solveLead')
-        for (const idx of leadSolverBoardIdx) {
-          let parsedLin = parseLin(boards[idx].lin)!
-          boards[idx].leadCost = 13 - (<any[]>res.leadData).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
-            boards[idx].tricksTaken! + boards[idx].tricksDiff!
-        }
+    }
+    if (res.leadData) {
+      console.log('solveLead')
+      for (const idx of leadSolverBoardIdx) {
+        let parsedLin = parseLin(boards[idx].lin)!
+        boards[idx].leadCost = 13 - (<any[]>res.leadData).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
+          boards[idx].tricksTaken! + boards[idx].tricksDiff!
       }
     }
   }

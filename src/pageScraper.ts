@@ -10,7 +10,6 @@ import insert from './astraDB'
 import parseLin from './lin_parser'
 import { disableImgCss, gotoLink, profilePromise, newCluster, getLin, getDDData } from './pageFunctions'
 import { processBoard } from './utils'
-import { StaticPool } from 'node-worker-threads-pool'
 import { Cluster } from 'ioredis'
 
 const scraperObject = {
@@ -24,10 +23,6 @@ const scraperObject = {
         return 2000
       },
       retryCondition: (_error) => true
-    })
-    const pool = new StaticPool({
-      size: 4,
-      task: './build/ddSolver.js',
     })
     const cluster = await newCluster(false)
     // Scraping process
@@ -135,7 +130,7 @@ const scraperObject = {
           Promise.all(people.map(async person => {
             cluster.execute(person, travellerPromise).then(res => {
               if (res.length > 0) {
-                DDPromises.push(getDDData(res, false, pool)
+                DDPromises.push(getDDData(res, false)
                   .then(updatedResult => {
                     console.log(JSON.stringify(updatedResult[0]))
                     //insert(updatedResult, promisifiedClient)
@@ -152,7 +147,7 @@ const scraperObject = {
             Promise.all(travellerData.map(async traveller => {
               cluster.execute(traveller, travellerPromise).then(res => {
                 if (res.length > 0) {
-                  DDPromises.push(getDDData(res, true, pool)
+                  DDPromises.push(getDDData(res, true)
                     .then(updatedResult => {
                       console.log(JSON.stringify(updatedResult[0]))
                       //insert(updatedResult, promisifiedClient)
@@ -186,7 +181,7 @@ const scraperObject = {
       var DDPromises: Promise<void>[] = []
       chunk.forEach(url => cluster.execute(url, boardsPromise).then(res => {
         if (res.length > 0) {
-          DDPromises.push(getDDData(res, false, pool)
+          DDPromises.push(getDDData(res, false)
             .then(updatedResult => {
               console.log(JSON.stringify(updatedResult[0]))
               //insert(updatedResult, promisifiedClient)

@@ -4,95 +4,100 @@ import StructType from 'ref-struct-napi'
 import ArrayType from "ref-array-napi"
 import _ from 'lodash'
 import path from 'path'
-import { parentPort } from 'worker_threads'
 
-parentPort!.on('message', workerData => {
+var ddTableDealPBN = StructType({
+  cards: ArrayType('char', 80)
+})
 
-  var ddTableDealPBN = StructType({
-    cards: ArrayType('char', 80)
-  })
-  
-  var ddTableDealsPBN = StructType({
-    noOfTables: 'int',
-    deals: ArrayType(ddTableDealPBN, 160)
-  })
-  var ddTableDealsPBNPtr = ref.refType(ddTableDealsPBN)
-  
-  var ddTableResults = StructType({
-    resTable: ArrayType('int', 20)
-  })
-  
-  var ddTablesRes = StructType({
-    noOfBoards: 'int',
-    results: ArrayType(ddTableResults, 160)
-  })
-  var ddTablesResPtr = ref.refType(ddTablesRes)
-  
-  var parResults = StructType({
-    parScore: ArrayType('char', 32),
-    parContractsString: ArrayType('char', 256)
-  })
-  
-  var allParResults = StructType({
-    parResults: ArrayType(parResults, 160)
-  })
-  var allParResultsPtr = ref.refType(allParResults)
-  
-  var dealPBN = StructType({
-    trump: 'int',
-    first: 'int',
-    currentTrickSuit: ArrayType('int', 3),
-    currentTrickRank: ArrayType('int', 3),
-    remainCards: ArrayType('char', 80)
-  })
-  
-  var boardsPBN = StructType({
-    noOfBoards: 'int',
-    deals: ArrayType(dealPBN, 200),
-    target: ArrayType('int', 200),
-    solutions: ArrayType('int', 200),
-    mode: ArrayType('int', 200)
-  })
-  var boardsPBNPtr = ref.refType(boardsPBN)
-  
-  var futureTricks = StructType({
-    nodes: 'int',
-    cards: 'int',
-    suit: ArrayType('int', 13),
-    rank: ArrayType('int', 13),
-    equals: ArrayType('int', 13),
-    score: ArrayType('int', 13)
-  })
-  
-  var solvedBoards = StructType({
-    noOfBoards: 'int',
-    solvedBoard: ArrayType(futureTricks, 200)
-  })
-  var solvedBoardsPtr = ref.refType(solvedBoards)
-  
-  var libdds = ffi.Library(path.join(process.cwd(), 'libdds/src/libdds.so'), {
-    'CalcAllTablesPBN': [ 'int', [ ddTableDealsPBNPtr, 'int', ArrayType('int'), ddTablesResPtr, allParResultsPtr ] ],
-    'SolveAllBoards': [ 'int', [ boardsPBNPtr, solvedBoardsPtr ] ]
-  })
+var ddTableDealsPBN = StructType({
+  noOfTables: 'int',
+  deals: ArrayType(ddTableDealPBN, 160)
+})
+var ddTableDealsPBNPtr = ref.refType(ddTableDealsPBN)
 
-  type boardData = {
-    ddTricks: number[][],
-    score: string
-  }
+var ddTableResults = StructType({
+  resTable: ArrayType('int', 20)
+})
 
-  type leadData = {
-    score: number,
-    values: number[][]
-  }
+var ddTablesRes = StructType({
+  noOfBoards: 'int',
+  results: ArrayType(ddTableResults, 160)
+})
+var ddTablesResPtr = ref.refType(ddTablesRes)
+
+var parResults = StructType({
+  parScore: ArrayType('char', 32),
+  parContractsString: ArrayType('char', 256)
+})
+
+var allParResults = StructType({
+  parResults: ArrayType(parResults, 160)
+})
+var allParResultsPtr = ref.refType(allParResults)
+
+var dealPBN = StructType({
+  trump: 'int',
+  first: 'int',
+  currentTrickSuit: ArrayType('int', 3),
+  currentTrickRank: ArrayType('int', 3),
+  remainCards: ArrayType('char', 80)
+})
+
+var boardsPBN = StructType({
+  noOfBoards: 'int',
+  deals: ArrayType(dealPBN, 200),
+  target: ArrayType('int', 200),
+  solutions: ArrayType('int', 200),
+  mode: ArrayType('int', 200)
+})
+var boardsPBNPtr = ref.refType(boardsPBN)
+
+var futureTricks = StructType({
+  nodes: 'int',
+  cards: 'int',
+  suit: ArrayType('int', 13),
+  rank: ArrayType('int', 13),
+  equals: ArrayType('int', 13),
+  score: ArrayType('int', 13)
+})
+
+var solvedBoards = StructType({
+  noOfBoards: 'int',
+  solvedBoard: ArrayType(futureTricks, 200)
+})
+var solvedBoardsPtr = ref.refType(solvedBoards)
+
+var libdds = ffi.Library(path.join(process.cwd(), 'libdds/src/libdds.so'), {
+  'CalcAllTablesPBN': [ 'int', [ ddTableDealsPBNPtr, 'int', ArrayType('int'), ddTablesResPtr, allParResultsPtr ] ],
+  'SolveAllBoards': [ 'int', [ boardsPBNPtr, solvedBoardsPtr ] ]
+})
+
+type boardData = {
+  ddTricks: number[][],
+  score: string
+}
+
+type leadData = {
+  score: number,
+  values: number[][]
+}
+
+type leadInfo = {
+  hands: string
+  leader: number
+  trump: number
+}
+
+export default (solveDD?: string[][], solveLead?: leadInfo[]) => {
 
   let res: {leadData?: leadData[][], ddData?: boardData[][]} = {}
 
-  if (workerData.solveDD) {
+  if (solveDD) {
     res.ddData = [[], [], [], []]
-    /*for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 4; i++) {
       let dealPBNs = []
       let ddRes = []
-      let chunkedBoards = _.chunk(workerData.solveDD[i], 32) as string[][]
+      let chunkedBoards = _.chunk(solveDD[i], 32) as string[][]
       for (let j = 0; j < chunkedBoards.length; j++) {
         for (let k = 0; k < chunkedBoards[j].length; k++) {
           dealPBNs.push(new ddTableDealPBN({
@@ -128,19 +133,14 @@ parentPort!.on('message', workerData => {
           })
         }
       }
-    }*/
+    }
   }
 
-  if (workerData.solveLead) {
-    type leadInfo = {
-      hands: string
-      leader: number
-      trump: number
-    }
+  if (solveLead) {
     res.leadData = []
     let deals = []
-    let chunkedBoards = _.chunk(workerData.solveLead, 200) as leadInfo[][]
-    /*for (let i = 0; i < chunkedBoards.length; i++) {
+    let chunkedBoards = _.chunk(solveLead, 200) as leadInfo[][]
+    for (let i = 0; i < chunkedBoards.length; i++) {
       for (let board of chunkedBoards[i]) {
         deals.push(new dealPBN({
           trump: board.trump,
@@ -199,8 +199,8 @@ parentPort!.on('message', workerData => {
         }
         res.leadData.push(cards)
       }
-    }*/
+    }
   }
-  
-  parentPort!.postMessage(res)
-})
+
+  return res
+}

@@ -35,7 +35,6 @@ const lodash_1 = __importDefault(require("lodash"));
 const lin_parser_1 = __importDefault(require("./lin_parser"));
 const pageFunctions_1 = require("./pageFunctions");
 const utils_1 = require("./utils");
-const node_worker_threads_pool_1 = require("node-worker-threads-pool");
 const scraperObject = {
     url: 'https://webutil.bridgebase.com/v2/tarchive.php?m=all&d=All%20Tourneys',
     login: 'https://www.bridgebase.com/myhands/myhands_login.php?t=%2Fmyhands%2Findex.php%3F',
@@ -47,10 +46,6 @@ const scraperObject = {
                 return 2000;
             },
             retryCondition: (_error) => true
-        });
-        const pool = new node_worker_threads_pool_1.StaticPool({
-            size: 4,
-            task: './build/ddSolver.js',
         });
         const cluster = await (0, pageFunctions_1.newCluster)(false);
         // Scraping process
@@ -151,7 +146,7 @@ const scraperObject = {
                     Promise.all(people.map(async (person) => {
                         cluster.execute(person, travellerPromise).then(res => {
                             if (res.length > 0) {
-                                DDPromises.push((0, pageFunctions_1.getDDData)(res, false, pool)
+                                DDPromises.push((0, pageFunctions_1.getDDData)(res, false)
                                     .then(updatedResult => {
                                     console.log(JSON.stringify(updatedResult[0]));
                                     //insert(updatedResult, promisifiedClient)
@@ -170,7 +165,7 @@ const scraperObject = {
                         Promise.all(travellerData.map(async (traveller) => {
                             cluster.execute(traveller, travellerPromise).then(res => {
                                 if (res.length > 0) {
-                                    DDPromises.push((0, pageFunctions_1.getDDData)(res, true, pool)
+                                    DDPromises.push((0, pageFunctions_1.getDDData)(res, true)
                                         .then(updatedResult => {
                                         console.log(JSON.stringify(updatedResult[0]));
                                         //insert(updatedResult, promisifiedClient)
@@ -203,7 +198,7 @@ const scraperObject = {
             var DDPromises = [];
             chunk.forEach(url => cluster.execute(url, boardsPromise).then(res => {
                 if (res.length > 0) {
-                    DDPromises.push((0, pageFunctions_1.getDDData)(res, false, pool)
+                    DDPromises.push((0, pageFunctions_1.getDDData)(res, false)
                         .then(updatedResult => {
                         console.log(JSON.stringify(updatedResult[0]));
                         //insert(updatedResult, promisifiedClient)
