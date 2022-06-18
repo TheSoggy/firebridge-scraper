@@ -95,9 +95,13 @@ exports.default = (solveDD, solveLead) => {
                 });
                 libdds.CalcAllTablesPBN(dealsPBNobj.ref(), i, [0, 0, 0, 0, 0], ddAllRes.ref(), allParRes.ref());
                 for (let k = 0; k < dealPBNs.length; k++) {
+                    if (k === 0) {
+                        console.log(lodash_1.default.zip.apply(this, lodash_1.default.chunk(ddAllRes.results[k].resTable.toString().split(',').map(Number), 4)));
+                        console.log(parseInt(allParRes.parResults[k].parScore.buffer.toString().replace(/EW.+/g, '').substring(3)));
+                    }
                     res.ddData[i].push({
                         ddTricks: lodash_1.default.zip.apply(this, lodash_1.default.chunk(ddAllRes.results[k].resTable.toString().split(',').map(Number), 4)),
-                        score: allParRes.parResults[k].parScore.buffer.toString()
+                        score: parseInt(allParRes.parResults[k].parScore.buffer.toString().replace(/EW.+/g, '').substring(3))
                     });
                 }
             }

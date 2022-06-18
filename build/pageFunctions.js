@@ -121,62 +121,6 @@ const getLin = async (board) => {
     }
 };
 exports.getLin = getLin;
-/*export const DDSolverAPI = (parsedLin: parsedLin, ddApiLimit: pLimit.Limit) => {
-  axiosRetry(axios, {
-    retries: 3,
-    retryDelay: (retryCount) => {
-      console.log(`retry attempt: ${retryCount}`)
-      return 2000
-    },
-    retryCondition: (_error) => true
-  })
-  const url = "https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=m&dealstr=W:" +
-    `${parsedLin.hands.join(' ')}&vul=${parsedLin.vul}&sockref=${Date.now()}&uniqueTID=${Date.now()+3}&_=${Date.now()-1000}`
-  return ddApiLimit(() => axios.get(url, {
-    headers: {
-      'user-agent': getRandom()
-    }
-  }).catch(err => {
-    console.log('DD Solver down')
-    return restartWorker()
-  }))
-}*/
-/*export const getDDSolver = async (parsedLin: parsedLin, board: Board, ddApiLimit: pLimit.Limit) => {
-  const res = await DDSolverAPI(parsedLin, ddApiLimit)
-  if (board.contract != 'P') {
-    board.tricksDiff = board.tricksTaken! -
-      parseInt(res.data.ddTricks[5 * ddsDir[board.contract[2]] + ddsContractSuits[board.contract[1]]], 16)
-  }
-  board.pointsDiff = board.score -
-    parseInt(res.data.scoreNS.substring(3))
-  board.impsDiff = pointsToImp(board.pointsDiff)
-  board.optimalPoints = parseInt(res.data.scoreNS.substring(3))
-}*/
-/*export const getLeadSolver = (parsedLin: parsedLin, board: Board, leadApiLimit: pLimit.Limit) => {
-  axiosRetry(axios, {
-    retries: 3,
-    retryDelay: (retryCount) => {
-      console.log(`retry attempt: ${retryCount}`)
-      return 2000
-    },
-    retryCondition: (_error) => true
-  })
-  const url = "https://dds.bridgewebs.com/cgi-bin/bsol2/ddummy?request=g&dealstr=" +
-    `${parsedLin.hands.join(' ')}&trumps=${board.contract[1]}` +
-    `&leader=${bboNumtoDir[(bboDir[board.contract[2]] + 1) % 4]}` +
-    `&requesttoken=${Date.now()}&uniqueTID=${Date.now()+3}`
-  return leadApiLimit(() => axios.get(url, {
-      headers: {
-        'user-agent': getRandom()
-      }
-    }).then(res => {
-      board.leadCost = 13 - (<any[]>res.data.sess.cards).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
-        board.tricksTaken! + board.tricksDiff!
-    }).catch(err => {
-      console.log('DD Solver down')
-      return restartWorker()
-    }))
-}*/
 const getDDData = async (boards, fromTraveller) => {
     if (boards.length == 0)
         return boards;
@@ -195,9 +139,9 @@ const getDDData = async (boards, fromTraveller) => {
                     res.ddData[parsedLin.vul][0].ddTricks[constants_1.ddsDir[boards[0].contract[2]]][constants_1.ddsContractSuits[boards[0].contract[1]]];
             }
             boards[0].pointsDiff = boards[0].score -
-                parseInt(res.ddData[parsedLin.vul][0].score);
+                res.ddData[parsedLin.vul][0].score;
             boards[0].impsDiff = (0, constants_1.pointsToImp)(boards[0].pointsDiff);
-            boards[0].optimalPoints = parseInt(res.ddData[parsedLin.vul][0].score);
+            boards[0].optimalPoints = res.ddData[parsedLin.vul][0].score;
         }
         var tricksDiff = boards[0].tricksDiff;
         var pointsDiff = boards[0].pointsDiff;
@@ -300,9 +244,9 @@ const getDDData = async (boards, fromTraveller) => {
                             res.ddData[i][j].ddTricks[constants_1.ddsDir[boards[idxByVul[i][j]].contract[2]]][constants_1.ddsContractSuits[boards[idxByVul[i][j]].contract[1]]];
                     }
                     boards[idxByVul[i][j]].pointsDiff = boards[idxByVul[i][j]].score -
-                        parseInt(res.ddData[i][j].score);
+                        res.ddData[i][j].score;
                     boards[idxByVul[i][j]].impsDiff = (0, constants_1.pointsToImp)(boards[idxByVul[i][j]].pointsDiff);
-                    boards[idxByVul[i][j]].optimalPoints = parseInt(res.ddData[i][j].score);
+                    boards[idxByVul[i][j]].optimalPoints = res.ddData[i][j].score;
                 }
             }
         }
@@ -315,70 +259,6 @@ const getDDData = async (boards, fromTraveller) => {
             }
         }
     }
-    /*if (fromTraveller && boards.length > 0) {
-      let parsedLin = parseLin(boards[0].lin)!
-      await getDDSolver(parsedLin, boards[0], ddApiLimit)
-      var tricksDiff = boards[0].tricksDiff
-      var pointsDiff = boards[0].pointsDiff
-      var impsDiff = boards[0].impsDiff
-      var optimalPoints = boards[0].optimalPoints
-    }
-    await Promise.all(boards.map(async board => {
-      let parsedLin = parseLin(board.lin)!
-      board.playerIds = parsedLin.playerIds
-      board.competitive = parsedLin.competitive
-      if (board.contract != 'P') {
-        board.declarer = board.playerIds[bboDir[board.contract[2]]]
-        switch (board.contract[1]) {
-          case 'H':
-          case 'S':
-            if (parseInt(board.contract[0]) == 7) {
-              board.contractLevel = ContractLevel.GRANDSLAM
-            } else if (parseInt(board.contract[0]) == 6) {
-              board.contractLevel = ContractLevel.SLAM
-            } else if (parseInt(board.contract[0]) >= 4) {
-              board.contractLevel = ContractLevel.GAME
-            } else {
-              board.contractLevel = ContractLevel.PARTIAL
-            }
-            break
-          case 'C':
-          case 'D':
-            if (parseInt(board.contract[0]) == 7) {
-              board.contractLevel = ContractLevel.GRANDSLAM
-            } else if (parseInt(board.contract[0]) == 6) {
-              board.contractLevel = ContractLevel.SLAM
-            } else if (parseInt(board.contract[0]) == 5) {
-              board.contractLevel = ContractLevel.GAME
-            } else {
-              board.contractLevel = ContractLevel.PARTIAL
-            }
-            break
-          case 'N':
-            if (parseInt(board.contract[0]) == 7) {
-              board.contractLevel = ContractLevel.GRANDSLAM
-            } else if (parseInt(board.contract[0]) == 6) {
-              board.contractLevel = ContractLevel.SLAM
-            } else if (parseInt(board.contract[0]) >= 3) {
-              board.contractLevel = ContractLevel.GAME
-            } else {
-              board.contractLevel = ContractLevel.PARTIAL
-            }
-            break
-        }
-        await getLeadSolver(parsedLin, board, leadApiLimit)
-      } else {
-        board.contractLevel = ContractLevel.PASSOUT
-      }
-      if (!fromTraveller) {
-        await getDDSolver(parsedLin, board, ddApiLimit)
-      } else {
-        board.tricksDiff = tricksDiff
-        board.pointsDiff = pointsDiff
-        board.impsDiff = impsDiff
-        board.optimalPoints = optimalPoints
-      }
-    }))*/
     return boards;
 };
 exports.getDDData = getDDData;

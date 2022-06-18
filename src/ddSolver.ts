@@ -74,7 +74,7 @@ var libdds = ffi.Library(path.join(process.cwd(), 'libdds/src/libdds.so'), {
 
 type boardData = {
   ddTricks: number[][],
-  score: string
+  score: number
 }
 
 type leadData = {
@@ -127,9 +127,13 @@ export default (solveDD?: string[][], solveLead?: leadInfo[]) => {
         libdds.CalcAllTablesPBN(dealsPBNobj.ref(), i, [0, 0, 0, 0, 0], ddAllRes.ref(), allParRes.ref())
         
         for (let k = 0; k < dealPBNs.length; k++) {
+          if (k === 0) {
+            console.log(_.zip.apply(this, _.chunk(ddAllRes.results[k].resTable.toString().split(',').map(Number), 4)))
+            console.log(parseInt(allParRes.parResults[k].parScore.buffer.toString().replace(/EW.+/g, '').substring(3)))
+          }
           res.ddData[i].push({
             ddTricks: _.zip.apply(this, _.chunk(ddAllRes.results[k].resTable.toString().split(',').map(Number), 4)) as number[][],
-            score: allParRes.parResults[k].parScore.buffer.toString()
+            score: parseInt(allParRes.parResults[k].parScore.buffer.toString().replace(/EW.+/g, '').substring(3))
           })
         }
       }
