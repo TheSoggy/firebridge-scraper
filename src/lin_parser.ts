@@ -1,15 +1,16 @@
+import { Vul } from "./types"
 const parseLin = (lin: string) => {
   let result: {
     hands: string[]
     playerIds: string[]
-    vul: string
+    vul: Vul
     competitive: boolean
     lead: string
   }
   result = {
     hands: [],
     playerIds: [],
-    vul: '',
+    vul: Vul.NONE,
     competitive: false,
     lead: '',
   }
@@ -39,13 +40,13 @@ const parseLin = (lin: string) => {
     result.hands.push(result.hands.shift()!)
     let vul_str = lin.match(/sv\|(.)\|/)![0].slice(3, -1)
     if ('NnSs'.includes(vul_str)) {
-      result.vul = 'NS'
+      result.vul = Vul.NS
     } else if ('EeWw'.includes(vul_str)) {
-      result.vul = 'EW'
+      result.vul = Vul.EW
     } else if ('oO0'.includes(vul_str)) {
-      result.vul = 'None'
+      result.vul = Vul.NONE
     } else if ('Bb'.includes(vul_str)) {
-      result.vul = 'All'
+      result.vul = Vul.ALL
     }
     let bids_match = lin.match(/mb\|(.+?)\|(p[cg])?/)
     let bids: string[] = []

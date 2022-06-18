@@ -6,17 +6,17 @@ export const bboDir: {[key: string]: number} = {
 }
 export const ddsDir: {[key: string]: number} = {
   'N': 0,
-  'S': 1,
-  'E': 2,
+  'E': 1,
+  'S': 2,
   'W': 3,
 }
 export const bboNumtoDir = ['S', 'W', 'N', 'E']
 export const ddsContractSuits: {[key: string]: number} = {
-  'N': 0,
-  'S': 1,
-  'H': 2,
-  'D': 3,
-  'C': 4,
+  'S': 0,
+  'H': 1,
+  'D': 2,
+  'C': 3,
+  'N': 4,
 }
 export const ddsSuits: {[key: string]: number} = {
   'S': 0,

@@ -9,17 +9,17 @@ exports.bboDir = {
 };
 exports.ddsDir = {
     'N': 0,
-    'S': 1,
-    'E': 2,
+    'E': 1,
+    'S': 2,
     'W': 3,
 };
 exports.bboNumtoDir = ['S', 'W', 'N', 'E'];
 exports.ddsContractSuits = {
-    'N': 0,
-    'S': 1,
-    'H': 2,
-    'D': 3,
-    'C': 4,
+    'S': 0,
+    'H': 1,
+    'D': 2,
+    'C': 3,
+    'N': 4,
 };
 exports.ddsSuits = {
     'S': 0,

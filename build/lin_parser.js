@@ -1,11 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const types_1 = require("./types");
 const parseLin = (lin) => {
     let result;
     result = {
         hands: [],
         playerIds: [],
-        vul: '',
+        vul: types_1.Vul.NONE,
         competitive: false,
         lead: '',
     };
@@ -33,16 +34,16 @@ const parseLin = (lin) => {
         result.hands.push(result.hands.shift());
         let vul_str = lin.match(/sv\|(.)\|/)[0].slice(3, -1);
         if ('NnSs'.includes(vul_str)) {
-            result.vul = 'NS';
+            result.vul = types_1.Vul.NS;
         }
         else if ('EeWw'.includes(vul_str)) {
-            result.vul = 'EW';
+            result.vul = types_1.Vul.EW;
         }
         else if ('oO0'.includes(vul_str)) {
-            result.vul = 'None';
+            result.vul = types_1.Vul.NONE;
         }
         else if ('Bb'.includes(vul_str)) {
-            result.vul = 'All';
+            result.vul = types_1.Vul.ALL;
         }
         let bids_match = lin.match(/mb\|(.+?)\|(p[cg])?/);
         let bids = [];

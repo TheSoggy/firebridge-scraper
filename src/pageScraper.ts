@@ -9,17 +9,14 @@ import _ from 'lodash'
 import insert from './astraDB'
 import parseLin from './lin_parser'
 import { disableImgCss, gotoLink, profilePromise, newCluster, getLin, getDDData } from './pageFunctions'
-import { processBoard, handleRejection } from './utils'
-import pLimit from 'p-limit'
+import { processBoard } from './utils'
+import { StaticPool } from 'node-worker-threads-pool'
 import { Cluster } from 'ioredis'
 
 const scraperObject = {
 	url: 'https://webutil.bridgebase.com/v2/tarchive.php?m=all&d=All%20Tourneys',
   login: 'https://www.bridgebase.com/myhands/myhands_login.php?t=%2Fmyhands%2Findex.php%3F',
 	async scrape() {
-    const MAX_SIMULTANEOUS_API_CALLS = 1
-    const ddApiLimit = pLimit(MAX_SIMULTANEOUS_API_CALLS)
-    const leadApiLimit = pLimit(MAX_SIMULTANEOUS_API_CALLS)
     axiosRetry(axios, {
       retries: 3,
       retryDelay: (retryCount) => {
@@ -28,12 +25,16 @@ const scraperObject = {
       },
       retryCondition: (_error) => true
     })
+    const pool = new StaticPool({
+      size: 4,
+      task: './build/ddSolver.js',
+    })
     const cluster = await newCluster(false)
     // Scraping process
     // Getting all tourneys
     var urls: string[] = await cluster.execute(this.url, async ({ page, data: url }) => {
       await disableImgCss(page)
-      await page.goto(url, { waitUntil: 'networkidle0' })
+      await gotoLink(page, url)
       await page.waitForSelector('#tourneys')
       return await page.$$eval('#tourneys > center > table > tbody > tr > td > a.ldr',
         links => links.map(link => (<HTMLAnchorElement>link).href))
@@ -134,9 +135,12 @@ const scraperObject = {
           Promise.all(people.map(async person => {
             cluster.execute(person, travellerPromise).then(res => {
               if (res.length > 0) {
-                DDPromises.push(handleRejection(getDDData(res, false, ddApiLimit, leadApiLimit)
-                  .then(updatedResult => insert(updatedResult, promisifiedClient))
-                ))
+                DDPromises.push(getDDData(res, false, pool)
+                  .then(updatedResult => {
+                    console.log(JSON.stringify(updatedResult[0]))
+                    //insert(updatedResult, promisifiedClient)
+                  })
+                )
               } else {
                 console.log(`${++failures} no data`)
               }
@@ -148,9 +152,12 @@ const scraperObject = {
             Promise.all(travellerData.map(async traveller => {
               cluster.execute(traveller, travellerPromise).then(res => {
                 if (res.length > 0) {
-                  DDPromises.push(handleRejection(getDDData(res, true, ddApiLimit, leadApiLimit)
-                    .then(updatedResult => insert(updatedResult, promisifiedClient))
-                  ))
+                  DDPromises.push(getDDData(res, true, pool)
+                    .then(updatedResult => {
+                      console.log(JSON.stringify(updatedResult[0]))
+                      //insert(updatedResult, promisifiedClient)
+                    })
+                  )
                 } else {
                   console.log(`${++failures} no data`)
                 }
@@ -179,9 +186,12 @@ const scraperObject = {
       var DDPromises: Promise<void>[] = []
       chunk.forEach(url => cluster.execute(url, boardsPromise).then(res => {
         if (res.length > 0) {
-          DDPromises.push(handleRejection(getDDData(res, false, ddApiLimit, leadApiLimit)
-            .then(updatedResult => insert(updatedResult, promisifiedClient))
-          ))
+          DDPromises.push(getDDData(res, false, pool)
+            .then(updatedResult => {
+              console.log(JSON.stringify(updatedResult[0]))
+              //insert(updatedResult, promisifiedClient)
+            })
+          )
         } else {
           console.log(`${++failures} no data`)
         }

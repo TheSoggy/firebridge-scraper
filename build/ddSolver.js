@@ -9,8 +9,7 @@ const ref_struct_napi_1 = __importDefault(require("ref-struct-napi"));
 const ref_array_napi_1 = __importDefault(require("ref-array-napi"));
 const lodash_1 = __importDefault(require("lodash"));
 const path_1 = __importDefault(require("path"));
-const fs_1 = __importDefault(require("fs"));
-const readline_1 = __importDefault(require("readline"));
+const worker_threads_1 = require("worker_threads");
 var ddTableDealPBN = (0, ref_struct_napi_1.default)({
     cards: (0, ref_array_napi_1.default)('char', 80)
 });
@@ -67,101 +66,98 @@ var libdds = ffi_napi_1.default.Library(path_1.default.join(process.cwd(), 'libd
     'CalcAllTablesPBN': ['int', [ddTableDealsPBNPtr, 'int', (0, ref_array_napi_1.default)('int'), ddTablesResPtr, allParResultsPtr]],
     'SolveAllBoards': ['int', [boardsPBNPtr, solvedBoardsPtr]]
 });
-let cards = [];
-var lineReader = readline_1.default.createInterface({
-    input: fs_1.default.createReadStream('list100.txt')
-});
-lineReader.on('line', function (line) {
-    cards.push(line);
-}).on('close', () => {
-    let egdealPBNs = [];
-    let egddTableResults = [];
-    let egparResults = [];
-    for (let card of cards) {
-        egdealPBNs.push(new ddTableDealPBN({
-            cards: card.split('')
-        }));
-        egddTableResults.push(new ddTableResults({
-            resTable: []
-        }));
-        egparResults.push(new parResults({
-            parScore: [],
-            parContractsString: []
-        }));
-    }
-    let egdealsPBN = new ddTableDealsPBN({
-        noOfTables: cards.length,
-        deals: egdealPBNs
-    });
-    let egddTablesRes = new ddTablesRes({
-        noOfBoards: cards.length,
-        results: egddTableResults
-    });
-    let egallParRes = new allParResults({
-        parResults: []
-    });
-    let egdeals = [];
-    for (let card of cards) {
-        egdeals.push(new dealPBN({
-            trump: 0,
-            first: 0,
-            currentTrickSuit: [0, 0, 0],
-            currentTrickRank: [0, 0, 0],
-            remainCards: card.split('')
-        }));
-    }
-    let egboards = new boardsPBN({
-        noOfBoards: cards.length,
-        deals: egdeals,
-        target: new Array(cards.length).fill(-1),
-        solutions: new Array(cards.length).fill(3),
-        mode: new Array(cards.length).fill(0)
-    });
-    let egfutureTricks = new futureTricks({
-        nodes: 0,
-        cards: 0,
-        suit: [],
-        rank: [],
-        equals: [],
-        score: []
-    });
-    let egsolvedBoards = new solvedBoards({
-        noOfBoards: cards.length,
-        solvedBoard: []
-    });
-    console.log(String.fromCharCode.apply(null, egdealsPBN.deals[0].cards.toString().split(',')));
-    console.time('test');
-    libdds.CalcAllTablesPBN(egdealsPBN.ref(), 2, [0, 0, 0, 0, 0], egddTablesRes.ref(), egallParRes.ref());
-    for (let i = 0; i < cards.length; i++) {
-        console.log(lodash_1.default.zip.apply(this, lodash_1.default.chunk(egddTablesRes.results[i].resTable.toString().split(','), 4)));
-    }
-    //egallParRes.parResults.map(res => console.log(res.parScore.buffer.toString()))
-    libdds.SolveAllBoards(egboards.ref(), egsolvedBoards.ref());
-    const dbitMapRank = [
-        0x0000, 0x0000, 0x0001, 0x0002, 0x0004, 0x0008, 0x0010, 0x0020,
-        0x0040, 0x0080, 0x0100, 0x0200, 0x0400, 0x0800, 0x1000, 0x2000
-    ];
-    const dcardRank = [
-        'x', 'x', '2', '3', '4', '5', '6', '7',
-        '8', '9', 'T', 'J', 'Q', 'K', 'A', '-'
-    ];
-    const dcardSuit = ['S', 'H', 'D', 'C', 'N'];
-    const equals_to_string = (equals, res) => {
-        let m = equals >> 2;
-        for (let i = 15; i >= 2; i--) {
-            if (m & (dbitMapRank[i])) {
-                res += dcardRank[i];
+worker_threads_1.parentPort.on('message', workerData => {
+    let res = {};
+    if (workerData.solveDD) {
+        res.ddData = [[], [], [], []];
+        for (let i = 0; i < 4; i++) {
+            let dealPBNs = [];
+            let ddRes = [];
+            for (let j = 0; j < workerData.solveDD[i].length; j++) {
+                dealPBNs.push(new ddTableDealPBN({
+                    cards: workerData.solveDD[i][j].split('')
+                }));
+                ddRes.push(new ddTableResults({
+                    resTable: []
+                }));
+            }
+            let dealsPBNobj = new ddTableDealsPBN({
+                noOfTables: dealPBNs.length,
+                deals: dealPBNs
+            });
+            let ddAllRes = new ddTablesRes({
+                noOfBoards: ddRes.length,
+                results: ddRes
+            });
+            let allParRes = new allParResults({
+                parResults: []
+            });
+            libdds.CalcAllTablesPBN(dealsPBNobj.ref(), i, [0, 0, 0, 0, 0], ddAllRes.ref(), allParRes.ref());
+            for (let j = 0; j < dealPBNs.length; j++) {
+                res.ddData[i].push({
+                    ddTricks: lodash_1.default.zip.apply(this, lodash_1.default.chunk(ddAllRes.results[j].resTable.toString().split(',').map(Number), 4)),
+                    score: allParRes.parResults[i].parScore.buffer.toString()
+                });
             }
         }
-        return res;
-    };
-    for (let i = 0; i < cards.length; i++) {
-        let board = egsolvedBoards.solvedBoard[i];
-        for (let j = 0; j < board.cards; j++) {
-            let res = "";
-            res = equals_to_string(board.equals[j], res);
-            console.log(j, dcardSuit[board.suit[j]], dcardRank[board.rank[j]], res, board.score[j]);
+    }
+    if (workerData.solveLead) {
+        res.leadData = [];
+        let deals = [];
+        for (let board of workerData.solveLead) {
+            deals.push(new dealPBN({
+                trump: board.trump,
+                first: board.leader,
+                currentTrickSuit: [0, 0, 0],
+                currentTrickRank: [0, 0, 0],
+                remainCards: board.hands.split('')
+            }));
+        }
+        let boardsObj = new boardsPBN({
+            noOfBoards: deals.length,
+            deals: deals,
+            target: new Array(deals.length).fill(-1),
+            solutions: new Array(deals.length).fill(3),
+            mode: new Array(deals.length).fill(0)
+        });
+        let solvedBoardsObj = new solvedBoards({
+            noOfBoards: deals.length,
+            solvedBoard: []
+        });
+        const dbitMapRank = [
+            0x0000, 0x0000, 0x0001, 0x0002, 0x0004, 0x0008, 0x0010, 0x0020,
+            0x0040, 0x0080, 0x0100, 0x0200, 0x0400, 0x0800, 0x1000, 0x2000
+        ];
+        const equals_to_string = (equals, res) => {
+            let m = equals >> 2;
+            for (let i = 15; i >= 2; i--) {
+                if (m & (dbitMapRank[i])) {
+                    res.push(i - 2);
+                }
+            }
+        };
+        libdds.SolveAllBoards(boardsObj.ref(), solvedBoardsObj.ref());
+        for (let i = 0; i < deals.length; i++) {
+            const cards = [];
+            let board = solvedBoardsObj.solvedBoard[i];
+            for (let j = 0; j < board.cards; j++) {
+                let res = [];
+                equals_to_string(board.equals[j], res);
+                if (cards[cards.length - 1].score != board.score[j]) {
+                    cards.push({
+                        score: board.score[j],
+                        values: [[], [], [], []]
+                    });
+                }
+                cards[cards.length - 1].values[board.suit[j]].push(board.rank[j] - 2);
+                if (res.length > 0) {
+                    res.forEach(card => {
+                        cards[cards.length - 1].values[board.suit[j]].push(card);
+                    });
+                }
+            }
+            res.leadData.push(cards);
         }
     }
-    console.timeEnd('test');
+    worker_threads_1.parentPort.postMessage(res);
 });

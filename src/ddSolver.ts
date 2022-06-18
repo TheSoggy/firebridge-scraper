@@ -4,8 +4,7 @@ import StructType from 'ref-struct-napi'
 import ArrayType from "ref-array-napi"
 import _ from 'lodash'
 import path from 'path'
-import fs from 'fs'
-import rl from 'readline'
+import { parentPort } from 'worker_threads'
 
 var ddTableDealPBN = StructType({
   cards: ArrayType('char', 80)
@@ -74,118 +73,123 @@ var libdds = ffi.Library(path.join(process.cwd(), 'libdds/src/libdds.so'), {
   'SolveAllBoards': [ 'int', [ boardsPBNPtr, solvedBoardsPtr ] ]
 })
 
-let cards: string[] = []
-var lineReader = rl.createInterface({
-  input: fs.createReadStream('list100.txt')
-});
-
-lineReader.on('line', function (line) {
-  cards.push(line)
-}).on('close', () => {
-  let egdealPBNs = []
-  let egddTableResults = []
-  let egparResults = []
-  for (let card of cards){
-    egdealPBNs.push(new ddTableDealPBN({
-      cards: card.split('')
-    }))
-    egddTableResults.push(new ddTableResults({
-      resTable: []
-    }))
-    egparResults.push(new parResults({
-      parScore: [],
-      parContractsString: []
-    }))
+parentPort!.on('message', workerData => {
+  
+  type boardData = {
+    ddTricks: number[][],
+    score: string
   }
 
-  let egdealsPBN = new ddTableDealsPBN({
-    noOfTables: cards.length,
-    deals: egdealPBNs
-  })
-
-
-  let egddTablesRes = new ddTablesRes({
-    noOfBoards: cards.length,
-    results: egddTableResults
-  })
-
-  let egallParRes = new allParResults({
-    parResults: []
-  })
-
-  let egdeals = []
-  for (let card of cards) {
-    egdeals.push(new dealPBN({
-      trump: 0,
-      first: 0,
-      currentTrickSuit: [0, 0, 0],
-      currentTrickRank: [0, 0, 0],
-      remainCards: card.split('')
-    }))
+  type leadData = {
+    score: number,
+    values: number[][]
   }
 
-  let egboards = new boardsPBN({
-    noOfBoards: cards.length,
-    deals: egdeals,
-    target: new Array(cards.length).fill(-1),
-    solutions: new Array(cards.length).fill(3),
-    mode: new Array(cards.length).fill(0)
-  })
+  let res: {leadData?: leadData[][], ddData?: boardData[][]} = {}
 
-  let egfutureTricks = new futureTricks({
-    nodes: 0,
-    cards: 0,
-    suit: [],
-    rank: [],
-    equals: [],
-    score: []
-  })
+  if (workerData.solveDD) {
+    res.ddData = [[], [], [], []]
+    for (let i = 0; i < 4; i++) {
+      let dealPBNs = []
+      let ddRes = []
+      for (let j = 0; j < workerData.solveDD[i].length; j++) {
+        dealPBNs.push(new ddTableDealPBN({
+          cards: workerData.solveDD[i][j].split('')
+        }))
+        ddRes.push(new ddTableResults({
+          resTable: []
+        }))
+      }
+        
+      let dealsPBNobj = new ddTableDealsPBN({
+        noOfTables: dealPBNs.length,
+        deals: dealPBNs
+      })
 
-  let egsolvedBoards = new solvedBoards({
-    noOfBoards: cards.length,
-    solvedBoard: []
-  })
 
-  console.log(String.fromCharCode.apply(null, egdealsPBN.deals[0].cards.toString().split(',')))
-  console.time('test')
-  libdds.CalcAllTablesPBN(egdealsPBN.ref(), 2, [0, 0, 0, 0, 0], egddTablesRes.ref(), egallParRes.ref())
-  for (let i = 0; i < cards.length; i++) {
-    console.log(_.zip.apply(this, _.chunk(egddTablesRes.results[i].resTable.toString().split(','), 4)))
-  }
-  //egallParRes.parResults.map(res => console.log(res.parScore.buffer.toString()))
-  libdds.SolveAllBoards(egboards.ref(), egsolvedBoards.ref())
+      let ddAllRes = new ddTablesRes({
+        noOfBoards: ddRes.length,
+        results: ddRes
+      })
 
-  const dbitMapRank = [
-    0x0000, 0x0000, 0x0001, 0x0002, 0x0004, 0x0008, 0x0010, 0x0020,
-    0x0040, 0x0080, 0x0100, 0x0200, 0x0400, 0x0800, 0x1000, 0x2000
-  ]
+      
+      let allParRes = new allParResults({
+        parResults: []
+      })
 
-  const dcardRank = [ 
-    'x', 'x', '2', '3', '4', '5', '6', '7',
-    '8', '9', 'T', 'J', 'Q', 'K', 'A', '-'
-  ]
-
-  const dcardSuit = [ 'S', 'H', 'D', 'C', 'N' ]
-
-  const equals_to_string = (equals: number, res: string) => {
-    let m = equals >> 2
-    for (let i = 15; i >= 2; i--) {
-      if (m & (dbitMapRank[i])) {
-        res += dcardRank[i]
+      libdds.CalcAllTablesPBN(dealsPBNobj.ref(), i, [0, 0, 0, 0, 0], ddAllRes.ref(), allParRes.ref())
+      
+      for (let j = 0; j < dealPBNs.length; j++) {
+        res.ddData[i].push({
+          ddTricks: _.zip.apply(this, _.chunk(ddAllRes.results[j].resTable.toString().split(',').map(Number), 4)) as number[][],
+          score: allParRes.parResults[i].parScore.buffer.toString()
+        })
       }
     }
-    return res
   }
 
-  for (let i = 0; i < cards.length; i++) {
-    let board = egsolvedBoards.solvedBoard[i]
-    for (let j = 0; j < board.cards; j++) {
-      let res = ""
-      res = equals_to_string(board.equals[j], res)
-      console.log(j, dcardSuit[board.suit[j]],
-        dcardRank[board.rank[j]], res,
-        board.score[j])
+  if (workerData.solveLead) {
+    res.leadData = []
+    let deals = []
+    for (let board of workerData.solveLead) {
+      deals.push(new dealPBN({
+        trump: board.trump,
+        first: board.leader, // player on lead
+        currentTrickSuit: [0, 0, 0],
+        currentTrickRank: [0, 0, 0],
+        remainCards: board.hands.split('')
+      }))
+    }
+
+    let boardsObj = new boardsPBN({
+      noOfBoards: deals.length,
+      deals: deals,
+      target: new Array(deals.length).fill(-1),
+      solutions: new Array(deals.length).fill(3),
+      mode: new Array(deals.length).fill(0)
+    })
+
+    let solvedBoardsObj = new solvedBoards({
+      noOfBoards: deals.length,
+      solvedBoard: []
+    })
+
+    const dbitMapRank = [
+      0x0000, 0x0000, 0x0001, 0x0002, 0x0004, 0x0008, 0x0010, 0x0020,
+      0x0040, 0x0080, 0x0100, 0x0200, 0x0400, 0x0800, 0x1000, 0x2000
+    ]
+
+    const equals_to_string = (equals: number, res: number[]) => {
+      let m = equals >> 2
+      for (let i = 15; i >= 2; i--) {
+        if (m & (dbitMapRank[i])) {
+          res.push(i - 2)
+        }
+      }
+    }
+    libdds.SolveAllBoards(boardsObj.ref(), solvedBoardsObj.ref())
+    for (let i = 0; i < deals.length; i++) {
+      const cards: leadData[] = []
+      let board = solvedBoardsObj.solvedBoard[i]
+      for (let j = 0; j < board.cards; j++) {
+        let res: number[] = []
+        equals_to_string(board.equals[j], res)
+        if (cards[cards.length - 1].score != board.score[j]) {
+          cards.push({
+            score: board.score[j],
+            values: [[], [], [], []]
+          })
+        }
+        cards[cards.length - 1].values[board.suit[j]].push(board.rank[j] - 2)
+        if (res.length > 0) {
+          res.forEach(card => {
+            cards[cards.length - 1].values[board.suit[j]].push(card)
+          })
+        }
+      }
+      res.leadData.push(cards)
     }
   }
-  console.timeEnd('test')  
+  
+  parentPort!.postMessage(res)
 })

@@ -5,6 +5,12 @@ export enum ContractLevel {
   SLAM = 3,
   GRANDSLAM = 4
 }
+export enum Vul {
+  NONE = 0,
+  ALL = 1,
+  NS = 2,
+  EW = 3
+}
 export type Board = {
   contract: string
   score: number

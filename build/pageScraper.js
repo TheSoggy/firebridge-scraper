@@ -32,18 +32,14 @@ const stargate_grpc_node_client_1 = require("@stargate-oss/stargate-grpc-node-cl
 const grpc = __importStar(require("@grpc/grpc-js"));
 const axios_retry_1 = __importDefault(require("axios-retry"));
 const lodash_1 = __importDefault(require("lodash"));
-const astraDB_1 = __importDefault(require("./astraDB"));
 const lin_parser_1 = __importDefault(require("./lin_parser"));
 const pageFunctions_1 = require("./pageFunctions");
 const utils_1 = require("./utils");
-const p_limit_1 = __importDefault(require("p-limit"));
+const node_worker_threads_pool_1 = require("node-worker-threads-pool");
 const scraperObject = {
     url: 'https://webutil.bridgebase.com/v2/tarchive.php?m=all&d=All%20Tourneys',
     login: 'https://www.bridgebase.com/myhands/myhands_login.php?t=%2Fmyhands%2Findex.php%3F',
     async scrape() {
-        const MAX_SIMULTANEOUS_API_CALLS = 1;
-        const ddApiLimit = (0, p_limit_1.default)(MAX_SIMULTANEOUS_API_CALLS);
-        const leadApiLimit = (0, p_limit_1.default)(MAX_SIMULTANEOUS_API_CALLS);
         (0, axios_retry_1.default)(axios_1.default, {
             retries: 3,
             retryDelay: (retryCount) => {
@@ -52,12 +48,16 @@ const scraperObject = {
             },
             retryCondition: (_error) => true
         });
+        const pool = new node_worker_threads_pool_1.StaticPool({
+            size: 4,
+            task: './build/ddSolver.js',
+        });
         const cluster = await (0, pageFunctions_1.newCluster)(false);
         // Scraping process
         // Getting all tourneys
         var urls = await cluster.execute(this.url, async ({ page, data: url }) => {
             await (0, pageFunctions_1.disableImgCss)(page);
-            await page.goto(url, { waitUntil: 'networkidle0' });
+            await (0, pageFunctions_1.gotoLink)(page, url);
             await page.waitForSelector('#tourneys');
             return await page.$$eval('#tourneys > center > table > tbody > tr > td > a.ldr', links => links.map(link => link.href));
         });
@@ -151,8 +151,11 @@ const scraperObject = {
                     Promise.all(people.map(async (person) => {
                         cluster.execute(person, travellerPromise).then(res => {
                             if (res.length > 0) {
-                                DDPromises.push((0, utils_1.handleRejection)((0, pageFunctions_1.getDDData)(res, false, ddApiLimit, leadApiLimit)
-                                    .then(updatedResult => (0, astraDB_1.default)(updatedResult, promisifiedClient))));
+                                DDPromises.push((0, pageFunctions_1.getDDData)(res, false, pool)
+                                    .then(updatedResult => {
+                                    console.log(JSON.stringify(updatedResult[0]));
+                                    //insert(updatedResult, promisifiedClient)
+                                }));
                             }
                             else {
                                 console.log(`${++failures} no data`);
@@ -167,8 +170,11 @@ const scraperObject = {
                         Promise.all(travellerData.map(async (traveller) => {
                             cluster.execute(traveller, travellerPromise).then(res => {
                                 if (res.length > 0) {
-                                    DDPromises.push((0, utils_1.handleRejection)((0, pageFunctions_1.getDDData)(res, true, ddApiLimit, leadApiLimit)
-                                        .then(updatedResult => (0, astraDB_1.default)(updatedResult, promisifiedClient))));
+                                    DDPromises.push((0, pageFunctions_1.getDDData)(res, true, pool)
+                                        .then(updatedResult => {
+                                        console.log(JSON.stringify(updatedResult[0]));
+                                        //insert(updatedResult, promisifiedClient)
+                                    }));
                                 }
                                 else {
                                     console.log(`${++failures} no data`);
@@ -197,8 +203,11 @@ const scraperObject = {
             var DDPromises = [];
             chunk.forEach(url => cluster.execute(url, boardsPromise).then(res => {
                 if (res.length > 0) {
-                    DDPromises.push((0, utils_1.handleRejection)((0, pageFunctions_1.getDDData)(res, false, ddApiLimit, leadApiLimit)
-                        .then(updatedResult => (0, astraDB_1.default)(updatedResult, promisifiedClient))));
+                    DDPromises.push((0, pageFunctions_1.getDDData)(res, false, pool)
+                        .then(updatedResult => {
+                        console.log(JSON.stringify(updatedResult[0]));
+                        //insert(updatedResult, promisifiedClient)
+                    }));
                 }
                 else {
                     console.log(`${++failures} no data`);
