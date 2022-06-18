@@ -190,14 +190,15 @@ const getDDData = async (boards, fromTraveller, pool) => {
         handsByVul[parsedLin.vul].push(hands);
         const res = await pool.exec({ solveDD: handsByVul });
         if (res.ddData) {
-            if (boards[0].contract != 'P') {
-                boards[0].tricksDiff = boards[0].tricksTaken -
-                    parseInt(res.ddData[parsedLin.vul][0].ddTricks[constants_1.ddsDir[boards[0].contract[2]]][constants_1.ddsContractSuits[boards[0].contract[1]]], 16);
+            console.log('solveDD');
+            /*if (boards[0].contract != 'P') {
+              boards[0].tricksDiff = boards[0].tricksTaken! -
+                parseInt(res.ddData[parsedLin.vul][0].ddTricks[ddsDir[boards[0].contract[2]]][ddsContractSuits[boards[0].contract[1]]], 16)
             }
             boards[0].pointsDiff = boards[0].score -
-                parseInt(res.ddData[parsedLin.vul][0].score);
-            boards[0].impsDiff = (0, constants_1.pointsToImp)(boards[0].pointsDiff);
-            boards[0].optimalPoints = parseInt(res.ddData[parsedLin.vul][0].score);
+              parseInt(res.ddData[parsedLin.vul][0].score)
+            boards[0].impsDiff = pointsToImp(boards[0].pointsDiff)
+            boards[0].optimalPoints = parseInt(res.ddData[parsedLin.vul][0].score)*/
         }
         var tricksDiff = boards[0].tricksDiff;
         var pointsDiff = boards[0].pointsDiff;
@@ -282,6 +283,7 @@ const getDDData = async (boards, fromTraveller, pool) => {
         if (fromTraveller) {
             const res = await pool.exec({ solveLead: leadSolverBoards });
             if (res.leadData) {
+                console.log('solveLead');
                 for (const idx of leadSolverBoardIdx) {
                     let parsedLin = (0, lin_parser_1.default)(boards[idx].lin);
                     boards[idx].leadCost = 13 - res.leadData.filter(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]].includes(constants_1.cardRank[parsedLin.lead[1]]))[0].score -
@@ -295,6 +297,7 @@ const getDDData = async (boards, fromTraveller, pool) => {
                 solveLead: leadSolverBoards
             });
             if (res.ddData) {
+                console.log('solveDD');
                 for (let i = 0; i < 4; i++) {
                     for (let j = 0; j < handsByVul[i].length; j++) {
                         if (boards[idxByVul[i][j]].contract != 'P') {
@@ -309,6 +312,7 @@ const getDDData = async (boards, fromTraveller, pool) => {
                 }
             }
             if (res.leadData) {
+                console.log('solveLead');
                 for (const idx of leadSolverBoardIdx) {
                     let parsedLin = (0, lin_parser_1.default)(boards[idx].lin);
                     boards[idx].leadCost = 13 - res.leadData.filter(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]].includes(constants_1.cardRank[parsedLin.lead[1]]))[0].score -

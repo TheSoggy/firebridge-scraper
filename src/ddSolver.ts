@@ -89,7 +89,7 @@ parentPort!.on('message', workerData => {
 
   if (workerData.solveDD) {
     res.ddData = [[], [], [], []]
-    for (let i = 0; i < 4; i++) {
+    /*for (let i = 0; i < 4; i++) {
       let dealPBNs = []
       let ddRes = []
       let chunkedBoards = _.chunk(workerData.solveDD[i], 32) as string[][]
@@ -128,7 +128,7 @@ parentPort!.on('message', workerData => {
           })
         }
       }
-    }
+    }*/
   }
 
   if (workerData.solveLead) {
@@ -140,7 +140,7 @@ parentPort!.on('message', workerData => {
     res.leadData = []
     let deals = []
     let chunkedBoards = _.chunk(workerData.solveLead, 200) as leadInfo[][]
-    for (let i = 0; i < chunkedBoards.length; i++) {
+    /*for (let i = 0; i < chunkedBoards.length; i++) {
       for (let board of chunkedBoards[i]) {
         deals.push(new dealPBN({
           trump: board.trump,
@@ -199,7 +199,7 @@ parentPort!.on('message', workerData => {
         }
         res.leadData.push(cards)
       }
-    }
+    }*/
   }
   
   parentPort!.postMessage(res)

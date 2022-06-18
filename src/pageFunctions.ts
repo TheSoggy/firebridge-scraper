@@ -203,14 +203,15 @@ export const getDDData = async (boards: Board[], fromTraveller: boolean, pool: S
     handsByVul[parsedLin.vul].push(hands)
     const res = await pool.exec({ solveDD: handsByVul })
     if (res.ddData) {
-      if (boards[0].contract != 'P') {
+      console.log('solveDD')
+      /*if (boards[0].contract != 'P') {
         boards[0].tricksDiff = boards[0].tricksTaken! -
           parseInt(res.ddData[parsedLin.vul][0].ddTricks[ddsDir[boards[0].contract[2]]][ddsContractSuits[boards[0].contract[1]]], 16)
       }
       boards[0].pointsDiff = boards[0].score -
         parseInt(res.ddData[parsedLin.vul][0].score)
       boards[0].impsDiff = pointsToImp(boards[0].pointsDiff)
-      boards[0].optimalPoints = parseInt(res.ddData[parsedLin.vul][0].score)
+      boards[0].optimalPoints = parseInt(res.ddData[parsedLin.vul][0].score)*/
     }
     var tricksDiff = boards[0].tricksDiff
     var pointsDiff = boards[0].pointsDiff!
@@ -284,6 +285,7 @@ export const getDDData = async (boards: Board[], fromTraveller: boolean, pool: S
     if (fromTraveller) {
       const res = await pool.exec({ solveLead: leadSolverBoards })
       if (res.leadData) {
+        console.log('solveLead')
         for (const idx of leadSolverBoardIdx) {
           let parsedLin = parseLin(boards[idx].lin)!
           boards[idx].leadCost = 13 - (<any[]>res.leadData).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
@@ -296,6 +298,7 @@ export const getDDData = async (boards: Board[], fromTraveller: boolean, pool: S
         solveLead: leadSolverBoards
       })
       if (res.ddData) {
+        console.log('solveDD')
         for (let i = 0; i < 4; i++) {
           for (let j = 0; j < handsByVul[i].length; j++) {
             if (boards[idxByVul[i][j]].contract != 'P') {
@@ -310,6 +313,7 @@ export const getDDData = async (boards: Board[], fromTraveller: boolean, pool: S
         }
       }
       if (res.leadData) {
+        console.log('solveLead')
         for (const idx of leadSolverBoardIdx) {
           let parsedLin = parseLin(boards[idx].lin)!
           boards[idx].leadCost = 13 - (<any[]>res.leadData).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
