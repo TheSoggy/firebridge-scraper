@@ -141,7 +141,7 @@ export const getDDData = async (boards: Board[], fromTraveller: boolean) => {
     let parsedLin = parseLin(boards[0].lin)!
     const hands = "W:" + parsedLin.hands.join(' ')
     handsByVul[parsedLin.vul].push(hands)
-    const res = solve(handsByVul, undefined)
+    const res = solve([...handsByVul], undefined)
     if (res.ddData) {
       if (boards[0].contract != 'P') {
         boards[0].tricksDiff = boards[0].tricksTaken! -
@@ -221,9 +221,8 @@ export const getDDData = async (boards: Board[], fromTraveller: boolean) => {
     }
   }
   if (fromTraveller) {
-    const res = solve(undefined, leadSolverBoards)
+    const res = solve(undefined, [...leadSolverBoards])
     if (res.leadData) {
-      console.log('solveLead')
       for (const idx of leadSolverBoardIdx) {
         let parsedLin = parseLin(boards[idx].lin)!
         boards[idx].leadCost = 13 - (<any[]>res.leadData).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
@@ -231,9 +230,8 @@ export const getDDData = async (boards: Board[], fromTraveller: boolean) => {
       }
     }
   } else {
-    const res = solve(handsByVul, leadSolverBoards)
+    const res = solve([...handsByVul], [...leadSolverBoards])
     if (res.ddData) {
-      console.log('solveDD')
       for (let i = 0; i < 4; i++) {
         for (let j = 0; j < handsByVul[i].length; j++) {
           if (boards[idxByVul[i][j]].contract != 'P') {
@@ -248,7 +246,6 @@ export const getDDData = async (boards: Board[], fromTraveller: boolean) => {
       }
     }
     if (res.leadData) {
-      console.log('solveLead')
       for (const [i, idx] of leadSolverBoardIdx.entries()) {
         let parsedLin = parseLin(boards[idx].lin)!
         boards[idx].leadCost = 13 - (<any[]>res.leadData[i]).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -

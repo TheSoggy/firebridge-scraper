@@ -9,46 +9,46 @@ const ref_struct_napi_1 = __importDefault(require("ref-struct-napi"));
 const ref_array_napi_1 = __importDefault(require("ref-array-napi"));
 const lodash_1 = __importDefault(require("lodash"));
 const path_1 = __importDefault(require("path"));
-var ddTableDealPBN = (0, ref_struct_napi_1.default)({
+const ddTableDealPBN = (0, ref_struct_napi_1.default)({
     cards: (0, ref_array_napi_1.default)('char', 80)
 });
-var ddTableDealsPBN = (0, ref_struct_napi_1.default)({
+const ddTableDealsPBN = (0, ref_struct_napi_1.default)({
     noOfTables: 'int',
     deals: (0, ref_array_napi_1.default)(ddTableDealPBN, 160)
 });
-var ddTableDealsPBNPtr = ref_napi_1.default.refType(ddTableDealsPBN);
-var ddTableResults = (0, ref_struct_napi_1.default)({
+const ddTableDealsPBNPtr = ref_napi_1.default.refType(ddTableDealsPBN);
+const ddTableResults = (0, ref_struct_napi_1.default)({
     resTable: (0, ref_array_napi_1.default)('int', 20)
 });
-var ddTablesRes = (0, ref_struct_napi_1.default)({
+const ddTablesRes = (0, ref_struct_napi_1.default)({
     noOfBoards: 'int',
     results: (0, ref_array_napi_1.default)(ddTableResults, 160)
 });
-var ddTablesResPtr = ref_napi_1.default.refType(ddTablesRes);
-var parResults = (0, ref_struct_napi_1.default)({
+const ddTablesResPtr = ref_napi_1.default.refType(ddTablesRes);
+const parResults = (0, ref_struct_napi_1.default)({
     parScore: (0, ref_array_napi_1.default)('char', 32),
     parContractsString: (0, ref_array_napi_1.default)('char', 256)
 });
-var allParResults = (0, ref_struct_napi_1.default)({
+const allParResults = (0, ref_struct_napi_1.default)({
     parResults: (0, ref_array_napi_1.default)(parResults, 160)
 });
-var allParResultsPtr = ref_napi_1.default.refType(allParResults);
-var dealPBN = (0, ref_struct_napi_1.default)({
+const allParResultsPtr = ref_napi_1.default.refType(allParResults);
+const dealPBN = (0, ref_struct_napi_1.default)({
     trump: 'int',
     first: 'int',
     currentTrickSuit: (0, ref_array_napi_1.default)('int', 3),
     currentTrickRank: (0, ref_array_napi_1.default)('int', 3),
     remainCards: (0, ref_array_napi_1.default)('char', 80)
 });
-var boardsPBN = (0, ref_struct_napi_1.default)({
+const boardsPBN = (0, ref_struct_napi_1.default)({
     noOfBoards: 'int',
     deals: (0, ref_array_napi_1.default)(dealPBN, 200),
     target: (0, ref_array_napi_1.default)('int', 200),
     solutions: (0, ref_array_napi_1.default)('int', 200),
     mode: (0, ref_array_napi_1.default)('int', 200)
 });
-var boardsPBNPtr = ref_napi_1.default.refType(boardsPBN);
-var futureTricks = (0, ref_struct_napi_1.default)({
+const boardsPBNPtr = ref_napi_1.default.refType(boardsPBN);
+const futureTricks = (0, ref_struct_napi_1.default)({
     nodes: 'int',
     cards: 'int',
     suit: (0, ref_array_napi_1.default)('int', 13),
@@ -56,12 +56,12 @@ var futureTricks = (0, ref_struct_napi_1.default)({
     equals: (0, ref_array_napi_1.default)('int', 13),
     score: (0, ref_array_napi_1.default)('int', 13)
 });
-var solvedBoards = (0, ref_struct_napi_1.default)({
+const solvedBoards = (0, ref_struct_napi_1.default)({
     noOfBoards: 'int',
     solvedBoard: (0, ref_array_napi_1.default)(futureTricks, 200)
 });
-var solvedBoardsPtr = ref_napi_1.default.refType(solvedBoards);
-var libdds = ffi_napi_1.default.Library(path_1.default.join(process.cwd(), 'libdds/src/libdds.so'), {
+const solvedBoardsPtr = ref_napi_1.default.refType(solvedBoards);
+const libdds = ffi_napi_1.default.Library(path_1.default.join(process.cwd(), 'libdds/src/libdds.so'), {
     'CalcAllTablesPBN': ['int', [ddTableDealsPBNPtr, 'int', (0, ref_array_napi_1.default)('int'), ddTablesResPtr, allParResultsPtr]],
     'SolveAllBoards': ['int', [boardsPBNPtr, solvedBoardsPtr]]
 });
@@ -74,9 +74,9 @@ exports.default = (solveDD, solveLead) => {
             let ddRes = [];
             let chunkedBoards = lodash_1.default.chunk(solveDD[i], 32);
             for (let j = 0; j < chunkedBoards.length; j++) {
-                for (let k = 0; k < chunkedBoards[j].length; k++) {
+                for (let hand of chunkedBoards[j]) {
                     dealPBNs.push(new ddTableDealPBN({
-                        cards: chunkedBoards[j][k].split('')
+                        cards: hand.split('')
                     }));
                     ddRes.push(new ddTableResults({
                         resTable: []
@@ -95,12 +95,8 @@ exports.default = (solveDD, solveLead) => {
                 });
                 libdds.CalcAllTablesPBN(dealsPBNobj.ref(), i, [0, 0, 0, 0, 0], ddAllRes.ref(), allParRes.ref());
                 for (let k = 0; k < dealPBNs.length; k++) {
-                    if (k === 0) {
-                        console.log(lodash_1.default.zip.apply(this, lodash_1.default.chunk(ddAllRes.results[k].resTable.toString().split(',').map(Number), 4)));
-                        console.log(parseInt(allParRes.parResults[k].parScore.buffer.toString().replace(/EW.+/g, '').substring(3)));
-                    }
                     res.ddData[i].push({
-                        ddTricks: lodash_1.default.zip.apply(this, lodash_1.default.chunk(ddAllRes.results[k].resTable.toString().split(',').map(Number), 4)),
+                        ddTricks: lodash_1.default.zip(...lodash_1.default.chunk(ddAllRes.results[k].resTable.toString().split(',').map(Number), 4)),
                         score: parseInt(allParRes.parResults[k].parScore.buffer.toString().replace(/EW.+/g, '').substring(3))
                     });
                 }
@@ -112,13 +108,13 @@ exports.default = (solveDD, solveLead) => {
         let deals = [];
         let chunkedBoards = lodash_1.default.chunk(solveLead, 200);
         for (let i = 0; i < chunkedBoards.length; i++) {
-            for (let board of chunkedBoards[i]) {
+            for (let { trump, leader, hands } of chunkedBoards[i]) {
                 deals.push(new dealPBN({
-                    trump: board.trump,
-                    first: board.leader,
+                    trump: trump,
+                    first: leader,
                     currentTrickSuit: [0, 0, 0],
                     currentTrickRank: [0, 0, 0],
-                    remainCards: board.hands.split('')
+                    remainCards: hands.split('')
                 }));
             }
             let boardsObj = new boardsPBN({
@@ -136,21 +132,22 @@ exports.default = (solveDD, solveLead) => {
                 0x0000, 0x0000, 0x0001, 0x0002, 0x0004, 0x0008, 0x0010, 0x0020,
                 0x0040, 0x0080, 0x0100, 0x0200, 0x0400, 0x0800, 0x1000, 0x2000
             ];
-            const equals_to_string = (equals, res) => {
+            const convertToNum = (equals) => {
                 let m = equals >> 2;
+                let res = [];
                 for (let i = 15; i >= 2; i--) {
                     if (m & (dbitMapRank[i])) {
                         res.push(i - 2);
                     }
                 }
+                return res;
             };
             libdds.SolveAllBoards(boardsObj.ref(), solvedBoardsObj.ref());
             for (let i = 0; i < deals.length; i++) {
                 const cards = [];
                 let board = solvedBoardsObj.solvedBoard[i];
                 for (let j = 0; j < board.cards; j++) {
-                    let res = [];
-                    equals_to_string(board.equals[j], res);
+                    let sameValues = convertToNum(board.equals[j]);
                     if (cards.length == 0 || cards[cards.length - 1].score != board.score[j]) {
                         cards.push({
                             score: board.score[j],
@@ -158,7 +155,7 @@ exports.default = (solveDD, solveLead) => {
                         });
                     }
                     cards[cards.length - 1].values[board.suit[j]].push(board.rank[j] - 2);
-                    res.forEach(card => {
+                    sameValues.forEach(card => {
                         cards[cards.length - 1].values[board.suit[j]].push(card);
                     });
                 }

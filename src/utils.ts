@@ -26,6 +26,7 @@ export const processBoard = (board: Board, contractStr: string) => {
         break
     }
   }
+  return board
 }
 
 export const handleRejection = (p: Promise<any>) => {

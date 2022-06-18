@@ -29,6 +29,7 @@ const processBoard = (board, contractStr) => {
                 break;
         }
     }
+    return board;
 };
 exports.processBoard = processBoard;
 const handleRejection = (p) => {

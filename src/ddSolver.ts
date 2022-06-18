@@ -5,37 +5,37 @@ import ArrayType from "ref-array-napi"
 import _ from 'lodash'
 import path from 'path'
 
-var ddTableDealPBN = StructType({
+const ddTableDealPBN = StructType({
   cards: ArrayType('char', 80)
 })
 
-var ddTableDealsPBN = StructType({
+const ddTableDealsPBN = StructType({
   noOfTables: 'int',
   deals: ArrayType(ddTableDealPBN, 160)
 })
-var ddTableDealsPBNPtr = ref.refType(ddTableDealsPBN)
+const ddTableDealsPBNPtr = ref.refType(ddTableDealsPBN)
 
-var ddTableResults = StructType({
+const ddTableResults = StructType({
   resTable: ArrayType('int', 20)
 })
 
-var ddTablesRes = StructType({
+const ddTablesRes = StructType({
   noOfBoards: 'int',
   results: ArrayType(ddTableResults, 160)
 })
-var ddTablesResPtr = ref.refType(ddTablesRes)
+const ddTablesResPtr = ref.refType(ddTablesRes)
 
-var parResults = StructType({
+const parResults = StructType({
   parScore: ArrayType('char', 32),
   parContractsString: ArrayType('char', 256)
 })
 
-var allParResults = StructType({
+const allParResults = StructType({
   parResults: ArrayType(parResults, 160)
 })
-var allParResultsPtr = ref.refType(allParResults)
+const allParResultsPtr = ref.refType(allParResults)
 
-var dealPBN = StructType({
+const dealPBN = StructType({
   trump: 'int',
   first: 'int',
   currentTrickSuit: ArrayType('int', 3),
@@ -43,16 +43,16 @@ var dealPBN = StructType({
   remainCards: ArrayType('char', 80)
 })
 
-var boardsPBN = StructType({
+const boardsPBN = StructType({
   noOfBoards: 'int',
   deals: ArrayType(dealPBN, 200),
   target: ArrayType('int', 200),
   solutions: ArrayType('int', 200),
   mode: ArrayType('int', 200)
 })
-var boardsPBNPtr = ref.refType(boardsPBN)
+const boardsPBNPtr = ref.refType(boardsPBN)
 
-var futureTricks = StructType({
+const futureTricks = StructType({
   nodes: 'int',
   cards: 'int',
   suit: ArrayType('int', 13),
@@ -61,13 +61,13 @@ var futureTricks = StructType({
   score: ArrayType('int', 13)
 })
 
-var solvedBoards = StructType({
+const solvedBoards = StructType({
   noOfBoards: 'int',
   solvedBoard: ArrayType(futureTricks, 200)
 })
-var solvedBoardsPtr = ref.refType(solvedBoards)
+const solvedBoardsPtr = ref.refType(solvedBoards)
 
-var libdds = ffi.Library(path.join(process.cwd(), 'libdds/src/libdds.so'), {
+const libdds = ffi.Library(path.join(process.cwd(), 'libdds/src/libdds.so'), {
   'CalcAllTablesPBN': [ 'int', [ ddTableDealsPBNPtr, 'int', ArrayType('int'), ddTablesResPtr, allParResultsPtr ] ],
   'SolveAllBoards': [ 'int', [ boardsPBNPtr, solvedBoardsPtr ] ]
 })
@@ -99,9 +99,9 @@ export default (solveDD?: string[][], solveLead?: leadInfo[]) => {
       let ddRes = []
       let chunkedBoards = _.chunk(solveDD[i], 32) as string[][]
       for (let j = 0; j < chunkedBoards.length; j++) {
-        for (let k = 0; k < chunkedBoards[j].length; k++) {
+        for (let hand of chunkedBoards[j]) {
           dealPBNs.push(new ddTableDealPBN({
-            cards: chunkedBoards[j][k].split('')
+            cards: hand.split('')
           }))
           ddRes.push(new ddTableResults({
             resTable: []
@@ -127,12 +127,8 @@ export default (solveDD?: string[][], solveLead?: leadInfo[]) => {
         libdds.CalcAllTablesPBN(dealsPBNobj.ref(), i, [0, 0, 0, 0, 0], ddAllRes.ref(), allParRes.ref())
         
         for (let k = 0; k < dealPBNs.length; k++) {
-          if (k === 0) {
-            console.log(_.zip.apply(this, _.chunk(ddAllRes.results[k].resTable.toString().split(',').map(Number), 4)))
-            console.log(parseInt(allParRes.parResults[k].parScore.buffer.toString().replace(/EW.+/g, '').substring(3)))
-          }
           res.ddData[i].push({
-            ddTricks: _.zip.apply(this, _.chunk(ddAllRes.results[k].resTable.toString().split(',').map(Number), 4)) as number[][],
+            ddTricks: _.zip(..._.chunk(ddAllRes.results[k].resTable.toString().split(',').map(Number), 4)) as number[][],
             score: parseInt(allParRes.parResults[k].parScore.buffer.toString().replace(/EW.+/g, '').substring(3))
           })
         }
@@ -145,13 +141,13 @@ export default (solveDD?: string[][], solveLead?: leadInfo[]) => {
     let deals = []
     let chunkedBoards = _.chunk(solveLead, 200) as leadInfo[][]
     for (let i = 0; i < chunkedBoards.length; i++) {
-      for (let board of chunkedBoards[i]) {
+      for (let {trump, leader, hands} of chunkedBoards[i]) {
         deals.push(new dealPBN({
-          trump: board.trump,
-          first: board.leader, // player on lead
+          trump: trump,
+          first: leader, // player on lead
           currentTrickSuit: [0, 0, 0],
           currentTrickRank: [0, 0, 0],
-          remainCards: board.hands.split('')
+          remainCards: hands.split('')
         }))
       }
 
@@ -173,21 +169,22 @@ export default (solveDD?: string[][], solveLead?: leadInfo[]) => {
         0x0040, 0x0080, 0x0100, 0x0200, 0x0400, 0x0800, 0x1000, 0x2000
       ]
 
-      const equals_to_string = (equals: number, res: number[]) => {
+      const convertToNum = (equals: number) => {
         let m = equals >> 2
+        let res: number[] = []
         for (let i = 15; i >= 2; i--) {
           if (m & (dbitMapRank[i])) {
             res.push(i - 2)
           }
         }
+        return res
       }
       libdds.SolveAllBoards(boardsObj.ref(), solvedBoardsObj.ref())
       for (let i = 0; i < deals.length; i++) {
         const cards: leadData[] = []
         let board = solvedBoardsObj.solvedBoard[i]
         for (let j = 0; j < board.cards; j++) {
-          let res: number[] = []
-          equals_to_string(board.equals[j], res)
+          let sameValues: number[] = convertToNum(board.equals[j])
           if (cards.length == 0 || cards[cards.length - 1].score != board.score[j]) {
             cards.push({
               score: board.score[j],
@@ -195,7 +192,7 @@ export default (solveDD?: string[][], solveLead?: leadInfo[]) => {
             })
           }
           cards[cards.length - 1].values[board.suit[j]].push(board.rank[j] - 2)
-          res.forEach(card => {
+          sameValues.forEach(card => {
             cards[cards.length - 1].values[board.suit[j]].push(card)
           })
         }
@@ -203,6 +200,5 @@ export default (solveDD?: string[][], solveLead?: leadInfo[]) => {
       }
     }
   }
-
   return res
 }

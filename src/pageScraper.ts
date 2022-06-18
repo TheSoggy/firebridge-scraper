@@ -10,6 +10,7 @@ import insert from './astraDB'
 import parseLin from './lin_parser'
 import { disableImgCss, gotoLink, profilePromise, newCluster, getLin, getDDData } from './pageFunctions'
 import { processBoard } from './utils'
+import pLimit from 'p-limit'
 import { Cluster } from 'ioredis'
 
 const scraperObject = {
@@ -25,6 +26,8 @@ const scraperObject = {
       retryCondition: (_error) => true
     })
     const cluster = await newCluster(false)
+    const MAX_SIMULTANEOUS_API_CALLS = 5
+    const apiLimit = pLimit(MAX_SIMULTANEOUS_API_CALLS)
     // Scraping process
     // Getting all tourneys
     var urls: string[] = await cluster.execute(this.url, async ({ page, data: url }) => {
@@ -113,7 +116,7 @@ const scraperObject = {
           result.contract = htmllink.text
           return result
       }) || []))).filter(board => parseLin(board.lin))
-      dataObj.boards.forEach(board => processBoard(board, board.contract))
+      dataObj.boards.map(board => processBoard({...board}, board.contract))
       await page.$$eval('table.handrecords > tbody > tr > td.resultcell + td',
         cells => (cells.map(cell => (<HTMLTableCellElement>cell).textContent!) || [])
         .filter(text => text.length > 0))
@@ -130,11 +133,8 @@ const scraperObject = {
           Promise.all(people.map(async person => {
             cluster.execute(person, travellerPromise).then(res => {
               if (res.length > 0) {
-                DDPromises.push(getDDData(res, false)
-                  .then(updatedResult => {
-                    console.log(JSON.stringify(updatedResult[0]))
-                    //insert(updatedResult, promisifiedClient)
-                  })
+                DDPromises.push(getDDData([...res], false)
+                  .then(updatedResult => apiLimit(() => insert(updatedResult, promisifiedClient)))
                 )
               } else {
                 console.log(`${++failures} no data`)
@@ -147,11 +147,8 @@ const scraperObject = {
             Promise.all(travellerData.map(async traveller => {
               cluster.execute(traveller, travellerPromise).then(res => {
                 if (res.length > 0) {
-                  DDPromises.push(getDDData(res, true)
-                    .then(updatedResult => {
-                      console.log(JSON.stringify(updatedResult[0]))
-                      //insert(updatedResult, promisifiedClient)
-                    })
+                  DDPromises.push(getDDData([...res], true)
+                    .then(updatedResult => apiLimit(() => insert(updatedResult, promisifiedClient)))
                   )
                 } else {
                   console.log(`${++failures} no data`)
@@ -177,15 +174,13 @@ const scraperObject = {
       grpc.credentials.createSsl(), bearerToken)
     const stargateClient = new StargateClient(process.env.ASTRA_GRPC_ENDPOINT!, credentials)
     const promisifiedClient = promisifyStargateClient(stargateClient)
+    let done = 0
     for (let chunk of chunkedUrls) {
       var DDPromises: Promise<void>[] = []
       chunk.forEach(url => cluster.execute(url, boardsPromise).then(res => {
         if (res.length > 0) {
-          DDPromises.push(getDDData(res, false)
-            .then(updatedResult => {
-              console.log(JSON.stringify(updatedResult[0]))
-              //insert(updatedResult, promisifiedClient)
-            })
+          DDPromises.push(getDDData([...res], false)
+            .then(updatedResult => apiLimit(() => insert(updatedResult, promisifiedClient)))
           )
         } else {
           console.log(`${++failures} no data`)
@@ -203,6 +198,7 @@ const scraperObject = {
           'Authorization': `Bearer ${process.env.HEROKU_API_TOKEN}`
         }
       })
+      console.log(`${++done} done`)
     }
     await cluster.close()
   }

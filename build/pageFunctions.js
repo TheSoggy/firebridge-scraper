@@ -132,7 +132,7 @@ const getDDData = async (boards, fromTraveller) => {
         let parsedLin = (0, lin_parser_1.default)(boards[0].lin);
         const hands = "W:" + parsedLin.hands.join(' ');
         handsByVul[parsedLin.vul].push(hands);
-        const res = (0, ddSolver_1.default)(handsByVul, undefined);
+        const res = (0, ddSolver_1.default)([...handsByVul], undefined);
         if (res.ddData) {
             if (boards[0].contract != 'P') {
                 boards[0].tricksDiff = boards[0].tricksTaken -
@@ -223,9 +223,8 @@ const getDDData = async (boards, fromTraveller) => {
         }
     }
     if (fromTraveller) {
-        const res = (0, ddSolver_1.default)(undefined, leadSolverBoards);
+        const res = (0, ddSolver_1.default)(undefined, [...leadSolverBoards]);
         if (res.leadData) {
-            console.log('solveLead');
             for (const idx of leadSolverBoardIdx) {
                 let parsedLin = (0, lin_parser_1.default)(boards[idx].lin);
                 boards[idx].leadCost = 13 - res.leadData.filter(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]].includes(constants_1.cardRank[parsedLin.lead[1]]))[0].score -
@@ -234,9 +233,8 @@ const getDDData = async (boards, fromTraveller) => {
         }
     }
     else {
-        const res = (0, ddSolver_1.default)(handsByVul, leadSolverBoards);
+        const res = (0, ddSolver_1.default)([...handsByVul], [...leadSolverBoards]);
         if (res.ddData) {
-            console.log('solveDD');
             for (let i = 0; i < 4; i++) {
                 for (let j = 0; j < handsByVul[i].length; j++) {
                     if (boards[idxByVul[i][j]].contract != 'P') {
@@ -251,7 +249,6 @@ const getDDData = async (boards, fromTraveller) => {
             }
         }
         if (res.leadData) {
-            console.log('solveLead');
             for (const [i, idx] of leadSolverBoardIdx.entries()) {
                 let parsedLin = (0, lin_parser_1.default)(boards[idx].lin);
                 boards[idx].leadCost = 13 - res.leadData[i].filter(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]].includes(constants_1.cardRank[parsedLin.lead[1]]))[0].score -

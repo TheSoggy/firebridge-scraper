@@ -32,9 +32,11 @@ const stargate_grpc_node_client_1 = require("@stargate-oss/stargate-grpc-node-cl
 const grpc = __importStar(require("@grpc/grpc-js"));
 const axios_retry_1 = __importDefault(require("axios-retry"));
 const lodash_1 = __importDefault(require("lodash"));
+const astraDB_1 = __importDefault(require("./astraDB"));
 const lin_parser_1 = __importDefault(require("./lin_parser"));
 const pageFunctions_1 = require("./pageFunctions");
 const utils_1 = require("./utils");
+const p_limit_1 = __importDefault(require("p-limit"));
 const scraperObject = {
     url: 'https://webutil.bridgebase.com/v2/tarchive.php?m=all&d=All%20Tourneys',
     login: 'https://www.bridgebase.com/myhands/myhands_login.php?t=%2Fmyhands%2Findex.php%3F',
@@ -48,6 +50,8 @@ const scraperObject = {
             retryCondition: (_error) => true
         });
         const cluster = await (0, pageFunctions_1.newCluster)(false);
+        const MAX_SIMULTANEOUS_API_CALLS = 5;
+        const apiLimit = (0, p_limit_1.default)(MAX_SIMULTANEOUS_API_CALLS);
         // Scraping process
         // Getting all tourneys
         var urls = await cluster.execute(this.url, async ({ page, data: url }) => {
@@ -133,7 +137,7 @@ const scraperObject = {
                 result.contract = htmllink.text;
                 return result;
             }) || []))).filter(board => (0, lin_parser_1.default)(board.lin));
-            dataObj.boards.forEach(board => (0, utils_1.processBoard)(board, board.contract));
+            dataObj.boards.map(board => (0, utils_1.processBoard)({ ...board }, board.contract));
             await page.$$eval('table.handrecords > tbody > tr > td.resultcell + td', cells => (cells.map(cell => cell.textContent) || [])
                 .filter(text => text.length > 0))
                 .then(cells => cells
@@ -146,11 +150,8 @@ const scraperObject = {
                     Promise.all(people.map(async (person) => {
                         cluster.execute(person, travellerPromise).then(res => {
                             if (res.length > 0) {
-                                DDPromises.push((0, pageFunctions_1.getDDData)(res, false)
-                                    .then(updatedResult => {
-                                    console.log(JSON.stringify(updatedResult[0]));
-                                    //insert(updatedResult, promisifiedClient)
-                                }));
+                                DDPromises.push((0, pageFunctions_1.getDDData)([...res], false)
+                                    .then(updatedResult => apiLimit(() => (0, astraDB_1.default)(updatedResult, promisifiedClient))));
                             }
                             else {
                                 console.log(`${++failures} no data`);
@@ -165,11 +166,8 @@ const scraperObject = {
                         Promise.all(travellerData.map(async (traveller) => {
                             cluster.execute(traveller, travellerPromise).then(res => {
                                 if (res.length > 0) {
-                                    DDPromises.push((0, pageFunctions_1.getDDData)(res, true)
-                                        .then(updatedResult => {
-                                        console.log(JSON.stringify(updatedResult[0]));
-                                        //insert(updatedResult, promisifiedClient)
-                                    }));
+                                    DDPromises.push((0, pageFunctions_1.getDDData)([...res], true)
+                                        .then(updatedResult => apiLimit(() => (0, astraDB_1.default)(updatedResult, promisifiedClient))));
                                 }
                                 else {
                                     console.log(`${++failures} no data`);
@@ -194,15 +192,13 @@ const scraperObject = {
         const credentials = grpc.credentials.combineChannelCredentials(grpc.credentials.createSsl(), bearerToken);
         const stargateClient = new stargate_grpc_node_client_1.StargateClient(process.env.ASTRA_GRPC_ENDPOINT, credentials);
         const promisifiedClient = (0, stargate_grpc_node_client_1.promisifyStargateClient)(stargateClient);
+        let done = 0;
         for (let chunk of chunkedUrls) {
             var DDPromises = [];
             chunk.forEach(url => cluster.execute(url, boardsPromise).then(res => {
                 if (res.length > 0) {
-                    DDPromises.push((0, pageFunctions_1.getDDData)(res, false)
-                        .then(updatedResult => {
-                        console.log(JSON.stringify(updatedResult[0]));
-                        //insert(updatedResult, promisifiedClient)
-                    }));
+                    DDPromises.push((0, pageFunctions_1.getDDData)([...res], false)
+                        .then(updatedResult => apiLimit(() => (0, astraDB_1.default)(updatedResult, promisifiedClient))));
                 }
                 else {
                     console.log(`${++failures} no data`);
@@ -219,6 +215,7 @@ const scraperObject = {
                     'Authorization': `Bearer ${process.env.HEROKU_API_TOKEN}`
                 }
             });
+            console.log(`${++done} done`);
         }
         await cluster.close();
     }
