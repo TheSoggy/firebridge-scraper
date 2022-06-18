@@ -147,7 +147,7 @@ exports.default = (solveDD, solveLead) => {
                 for (let j = 0; j < board.cards; j++) {
                     let res = [];
                     equals_to_string(board.equals[j], res);
-                    if (cards[cards.length - 1].score != board.score[j]) {
+                    if (cards.length == 0 || cards[cards.length - 1].score != board.score[j]) {
                         cards.push({
                             score: board.score[j],
                             values: [[], [], [], []]
