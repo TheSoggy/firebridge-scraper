@@ -61,7 +61,7 @@ const solvedBoards = (0, ref_struct_napi_1.default)({
     solvedBoard: (0, ref_array_napi_1.default)(futureTricks, 200)
 });
 const solvedBoardsPtr = ref_napi_1.default.refType(solvedBoards);
-const libdds = ffi_napi_1.default.Library(path_1.default.join(process.cwd(), 'libdds/src/libdds.so'), {
+let libdds = ffi_napi_1.default.Library(path_1.default.join(process.cwd(), 'libdds/src/libdds.so'), {
     'CalcAllTablesPBN': ['int', [ddTableDealsPBNPtr, 'int', (0, ref_array_napi_1.default)('int'), ddTablesResPtr, allParResultsPtr]],
     'SolveAllBoards': ['int', [boardsPBNPtr, solvedBoardsPtr]]
 });

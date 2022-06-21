@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node build/index.js",
+    "start": "node --max-old-space-size=512 build/index.js",
     "astra": "node build/leaderboard.js",
     "ddsolver": "node build/ddSolver.js",
     "dev": "next dev"
@@ -42,6 +42,7 @@
   "devDependencies": {
     "@tsconfig/node16": "^1.0.2",
     "@types/ffi-napi": "^4.0.5",
+    "@types/heapdump": "^0.3.1",
     "@types/random-useragent": "^0.3.1",
     "@types/react": "^18.0.9",
     "@types/uuid": "^8.3.4",

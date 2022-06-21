@@ -50,16 +50,23 @@ const scraperObject = {
             retryCondition: (_error) => true
         });
         const cluster = await (0, pageFunctions_1.newCluster)(false);
-        const MAX_SIMULTANEOUS_API_CALLS = 5;
+        const MAX_SIMULTANEOUS_API_CALLS = 200;
         const apiLimit = (0, p_limit_1.default)(MAX_SIMULTANEOUS_API_CALLS);
         // Scraping process
         // Getting all tourneys
-        var urls = await cluster.execute(this.url, async ({ page, data: url }) => {
-            await (0, pageFunctions_1.disableImgCss)(page);
-            await (0, pageFunctions_1.gotoLink)(page, url);
-            await page.waitForSelector('#tourneys');
-            return await page.$$eval('#tourneys > center > table > tbody > tr > td > a.ldr', links => links.map(link => link.href));
-        });
+        const getUrls = async () => {
+            return await cluster.execute(this.url, async ({ page, data: url }) => {
+                await (0, pageFunctions_1.disableImgCss)(page);
+                await (0, pageFunctions_1.gotoLink)(page, url);
+                await page.waitForTimeout(1000);
+                await page.waitForSelector('#tourneys');
+                return await page.$$eval('#tourneys > center > table > tbody > tr > td > a.ldr', links => links.map(link => link.href));
+            });
+        };
+        let urls = await getUrls();
+        while (urls.length < 1500) {
+            urls = await getUrls();
+        }
         await cluster.execute(this.login, async ({ page, data: url }) => {
             await (0, pageFunctions_1.disableImgCss)(page);
             await page.goto(url, { waitUntil: 'domcontentloaded' });
@@ -97,11 +104,17 @@ const scraperObject = {
                     board.lin = row.querySelector('td.movie > a[onclick]').getAttribute('onclick');
                 }
                 catch (err) {
-                    console.log(link);
+                    if (link.includes("mbthands")) {
+                        return null;
+                    }
                 }
                 return board;
             }) || []), link);
-            boards.forEach(board => (0, utils_1.processBoard)(board, board.contract));
+            if (boards.includes(null)) {
+                console.log('retry ' + link);
+                return travellerPromise({ page, data: link });
+            }
+            boards = boards.map(board => (0, utils_1.processBoard)(board, board.contract)).filter(board => board);
             await Promise.all(boards.map(async (board) => (0, pageFunctions_1.getLin)(board)));
             boards = boards.filter(board => (0, lin_parser_1.default)(board.lin));
             return boards;
@@ -137,7 +150,7 @@ const scraperObject = {
                 result.contract = htmllink.text;
                 return result;
             }) || []))).filter(board => (0, lin_parser_1.default)(board.lin));
-            dataObj.boards.map(board => (0, utils_1.processBoard)({ ...board }, board.contract));
+            dataObj.boards = dataObj.boards.map(board => (0, utils_1.processBoard)(board, board.contract)).filter(board => board);
             await page.$$eval('table.handrecords > tbody > tr > td.resultcell + td', cells => (cells.map(cell => cell.textContent) || [])
                 .filter(text => text.length > 0))
                 .then(cells => cells
@@ -150,8 +163,8 @@ const scraperObject = {
                     Promise.all(people.map(async (person) => {
                         cluster.execute(person, travellerPromise).then(res => {
                             if (res.length > 0) {
-                                DDPromises.push((0, pageFunctions_1.getDDData)([...res], false)
-                                    .then(updatedResult => apiLimit(() => (0, astraDB_1.default)(updatedResult, promisifiedClient))));
+                                let updatedResult = (0, pageFunctions_1.getDDData)([...res], false);
+                                DDPromises.push(apiLimit(() => (0, astraDB_1.default)(updatedResult, promisifiedClient)));
                             }
                             else {
                                 console.log(`${++failures} no data`);
@@ -166,8 +179,8 @@ const scraperObject = {
                         Promise.all(travellerData.map(async (traveller) => {
                             cluster.execute(traveller, travellerPromise).then(res => {
                                 if (res.length > 0) {
-                                    DDPromises.push((0, pageFunctions_1.getDDData)([...res], true)
-                                        .then(updatedResult => apiLimit(() => (0, astraDB_1.default)(updatedResult, promisifiedClient))));
+                                    let updatedResult = (0, pageFunctions_1.getDDData)([...res], true);
+                                    DDPromises.push(apiLimit(() => (0, astraDB_1.default)(updatedResult, promisifiedClient)));
                                 }
                                 else {
                                     console.log(`${++failures} no data`);
@@ -188,17 +201,19 @@ const scraperObject = {
         }
         let failures = 0;
         let chunkedUrls = lodash_1.default.chunk(urls, 50);
+        console.log(`0/${chunkedUrls.length} done`);
         const bearerToken = new stargate_grpc_node_client_1.StargateBearerToken(process.env.ASTRA_TOKEN);
         const credentials = grpc.credentials.combineChannelCredentials(grpc.credentials.createSsl(), bearerToken);
         const stargateClient = new stargate_grpc_node_client_1.StargateClient(process.env.ASTRA_GRPC_ENDPOINT, credentials);
         const promisifiedClient = (0, stargate_grpc_node_client_1.promisifyStargateClient)(stargateClient);
         let done = 0;
+        let DDPromises;
         for (let chunk of chunkedUrls) {
-            var DDPromises = [];
+            DDPromises = [];
             chunk.forEach(url => cluster.execute(url, boardsPromise).then(res => {
                 if (res.length > 0) {
-                    DDPromises.push((0, pageFunctions_1.getDDData)([...res], false)
-                        .then(updatedResult => apiLimit(() => (0, astraDB_1.default)(updatedResult, promisifiedClient))));
+                    let updatedResult = (0, pageFunctions_1.getDDData)([...res], false);
+                    DDPromises.push(apiLimit(() => (0, astraDB_1.default)(updatedResult, promisifiedClient)));
                 }
                 else {
                     console.log(`${++failures} no data`);
@@ -215,7 +230,7 @@ const scraperObject = {
                     'Authorization': `Bearer ${process.env.HEROKU_API_TOKEN}`
                 }
             });
-            console.log(`${++done} done`);
+            console.log(`${++done}/${chunkedUrls.length} done`);
         }
         await cluster.close();
     }

@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getDDData = exports.getLin = exports.profilePromise = exports.gotoLink = exports.disableImgCss = exports.restartWorker = exports.newCluster = void 0;
 const puppeteer_extra_1 = __importDefault(require("puppeteer-extra"));
 const lin_parser_1 = __importDefault(require("./lin_parser"));
-const puppeteer_extra_plugin_stealth_1 = __importDefault(require("puppeteer-extra-plugin-stealth"));
 const puppeteer_cluster_1 = require("puppeteer-cluster");
 const types_1 = require("./types");
 const constants_1 = require("./constants");
@@ -15,12 +14,11 @@ const axios_retry_1 = __importDefault(require("axios-retry"));
 const random_useragent_1 = require("random-useragent");
 const xml2json_1 = __importDefault(require("xml2json"));
 const ddSolver_1 = __importDefault(require("./ddSolver"));
-puppeteer_extra_1.default.use((0, puppeteer_extra_plugin_stealth_1.default)());
 const newCluster = async (monitoring) => {
     const cluster = await puppeteer_cluster_1.Cluster.launch({
         concurrency: puppeteer_cluster_1.Cluster.CONCURRENCY_PAGE,
         maxConcurrency: 25,
-        retryLimit: 20,
+        retryLimit: 5,
         retryDelay: 2000,
         timeout: 600000,
         puppeteer: puppeteer_extra_1.default,
@@ -54,13 +52,10 @@ const restartWorker = () => {
 exports.restartWorker = restartWorker;
 const disableImgCss = async (page) => {
     await page.setRequestInterception(true);
-    page.on('request', (req) => {
-        if (req.resourceType() == 'stylesheet' || req.resourceType() == 'script' || req.resourceType() == 'font' || req.resourceType() === 'image') {
-            req.abort();
-        }
-        else {
-            req.continue();
-        }
+    page.on('request', async (req) => {
+        ['image', 'stylesheet', 'font', 'script'].includes(req.resourceType())
+            ? await req.abort()
+            : await req.continue();
     });
 };
 exports.disableImgCss = disableImgCss;
@@ -83,7 +78,7 @@ const gotoLink = async (page, link) => {
             await page.waitForTimeout(1000);
         }
         if (link.includes("mbthands")) {
-            await page.waitForTimeout(200);
+            await page.waitForTimeout(500);
         }
     } while (!response.ok());
 };
@@ -121,7 +116,7 @@ const getLin = async (board) => {
     }
 };
 exports.getLin = getLin;
-const getDDData = async (boards, fromTraveller) => {
+const getDDData = (boards, fromTraveller) => {
     if (boards.length == 0)
         return boards;
     const handsByVul = [[], [], [], []];
@@ -148,7 +143,7 @@ const getDDData = async (boards, fromTraveller) => {
         var impsDiff = boards[0].impsDiff;
         var optimalPoints = boards[0].optimalPoints;
     }
-    for (const [idx, board] of boards.entries()) {
+    for (const [boardIdx, board] of boards.entries()) {
         let parsedLin = (0, lin_parser_1.default)(board.lin);
         board.playerIds = parsedLin.playerIds;
         board.competitive = parsedLin.competitive;
@@ -205,7 +200,7 @@ const getDDData = async (boards, fromTraveller) => {
                 leader: constants_1.ddsDir[constants_1.bboNumtoDir[(constants_1.bboDir[board.contract[2]] + 1) % 4]],
                 trump: constants_1.ddsContractSuits[board.contract[1]]
             });
-            leadSolverBoardIdx.push(idx);
+            leadSolverBoardIdx.push(boardIdx);
         }
         else {
             board.contractLevel = types_1.ContractLevel.PASSOUT;
@@ -219,16 +214,25 @@ const getDDData = async (boards, fromTraveller) => {
         else {
             const hands = "W:" + parsedLin.hands.join(' ');
             handsByVul[parsedLin.vul].push(hands);
-            idxByVul[parsedLin.vul].push(idx);
+            idxByVul[parsedLin.vul].push(boardIdx);
         }
     }
     if (fromTraveller) {
         const res = (0, ddSolver_1.default)(undefined, [...leadSolverBoards]);
         if (res.leadData) {
-            for (const idx of leadSolverBoardIdx) {
-                let parsedLin = (0, lin_parser_1.default)(boards[idx].lin);
-                boards[idx].leadCost = 13 - res.leadData.filter(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]].includes(constants_1.cardRank[parsedLin.lead[1]]))[0].score -
-                    boards[idx].tricksTaken + boards[idx].tricksDiff;
+            for (const [i, leadIdx] of leadSolverBoardIdx.entries()) {
+                let parsedLin = (0, lin_parser_1.default)(boards[leadIdx].lin);
+                if (res.leadData[i].some(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]] === undefined)) {
+                    console.log(JSON.stringify(res.leadData[i]));
+                    console.log(JSON.stringify(parsedLin));
+                    console.log(JSON.stringify(boards[leadIdx]));
+                }
+                if (res.leadData[i].filter(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]].includes(constants_1.cardRank[parsedLin.lead[1]]))[0] === undefined) {
+                    console.log(JSON.stringify(res.leadData[i]));
+                    console.log(JSON.stringify(lin_parser_1.default));
+                }
+                boards[leadIdx].leadCost = 13 - res.leadData[i].filter(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]].includes(constants_1.cardRank[parsedLin.lead[1]]))[0].score -
+                    boards[leadIdx].tricksTaken + boards[leadIdx].tricksDiff;
             }
         }
     }
@@ -238,6 +242,10 @@ const getDDData = async (boards, fromTraveller) => {
             for (let i = 0; i < 4; i++) {
                 for (let j = 0; j < handsByVul[i].length; j++) {
                     if (boards[idxByVul[i][j]].contract != 'P') {
+                        if (res.ddData[i][j].ddTricks[constants_1.ddsDir[boards[idxByVul[i][j]].contract[2]]] === undefined) {
+                            console.log(res.ddData[i][j].ddTricks);
+                            console.log(boards[idxByVul[i][j]].contract);
+                        }
                         boards[idxByVul[i][j]].tricksDiff = boards[idxByVul[i][j]].tricksTaken -
                             res.ddData[i][j].ddTricks[constants_1.ddsDir[boards[idxByVul[i][j]].contract[2]]][constants_1.ddsContractSuits[boards[idxByVul[i][j]].contract[1]]];
                     }
@@ -249,10 +257,19 @@ const getDDData = async (boards, fromTraveller) => {
             }
         }
         if (res.leadData) {
-            for (const [i, idx] of leadSolverBoardIdx.entries()) {
-                let parsedLin = (0, lin_parser_1.default)(boards[idx].lin);
-                boards[idx].leadCost = 13 - res.leadData[i].filter(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]].includes(constants_1.cardRank[parsedLin.lead[1]]))[0].score -
-                    boards[idx].tricksTaken + boards[idx].tricksDiff;
+            for (const [i, leadIdx] of leadSolverBoardIdx.entries()) {
+                let parsedLin = (0, lin_parser_1.default)(boards[leadIdx].lin);
+                if (res.leadData[i].some(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]] === undefined)) {
+                    console.log(JSON.stringify(res.leadData[i]));
+                    console.log(JSON.stringify(parsedLin));
+                    console.log(JSON.stringify(boards[leadIdx]));
+                }
+                if (res.leadData[i].filter(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]].includes(constants_1.cardRank[parsedLin.lead[1]]))[0] === undefined) {
+                    console.log(JSON.stringify(res.leadData[i]));
+                    console.log(JSON.stringify(lin_parser_1.default));
+                }
+                boards[leadIdx].leadCost = 13 - res.leadData[i].filter(set => set.values[constants_1.ddsSuits[parsedLin.lead[0]]].includes(constants_1.cardRank[parsedLin.lead[1]]))[0].score -
+                    boards[leadIdx].tricksTaken + boards[leadIdx].tricksDiff;
             }
         }
     }

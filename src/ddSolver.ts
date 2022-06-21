@@ -67,11 +67,6 @@ const solvedBoards = StructType({
 })
 const solvedBoardsPtr = ref.refType(solvedBoards)
 
-const libdds = ffi.Library(path.join(process.cwd(), 'libdds/src/libdds.so'), {
-  'CalcAllTablesPBN': [ 'int', [ ddTableDealsPBNPtr, 'int', ArrayType('int'), ddTablesResPtr, allParResultsPtr ] ],
-  'SolveAllBoards': [ 'int', [ boardsPBNPtr, solvedBoardsPtr ] ]
-})
-
 type boardData = {
   ddTricks: number[][],
   score: number
@@ -87,6 +82,11 @@ type leadInfo = {
   leader: number
   trump: number
 }
+
+let libdds = ffi.Library(path.join(process.cwd(), 'libdds/src/libdds.so'), {
+  'CalcAllTablesPBN': [ 'int', [ ddTableDealsPBNPtr, 'int', ArrayType('int'), ddTablesResPtr, allParResultsPtr ] ],
+  'SolveAllBoards': [ 'int', [ boardsPBNPtr, solvedBoardsPtr ] ]
+})
 
 export default (solveDD?: string[][], solveLead?: leadInfo[]) => {
 

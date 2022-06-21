@@ -11,6 +11,7 @@ async function insert(boards: Board[], promisifiedClient: PromisifiedStargateCli
     try {
       await promisifiedClient.executeQuery(query)
     } catch (err) {
+      if (retryCount > 3) console.log(retryCount)
       setTimeout(async () => await tryQuery(query, retryCount + 1), 250 * retryCount)
     }
   }
@@ -77,7 +78,7 @@ async function insert(boards: Board[], promisifiedClient: PromisifiedStargateCli
       points_diff.setInt(board.pointsDiff!)
       const competitive = new Value()
       competitive.setBoolean(board.competitive)
-      const queryValues = new Values();
+      const queryValues = new Values()
       queryValues.setValuesList([player_id, contract_level, contract, 
         tricks_over_contract, deal_type, optimal_points, lead_cost, tricks_diff,
         imps_diff, points_diff, competitive])
@@ -89,29 +90,29 @@ async function insert(boards: Board[], promisifiedClient: PromisifiedStargateCli
         points_diff = points_diff ${numToString(board.pointsDiff!)},
         imps_diff = imps_diff ${numToString(board.impsDiff!)}`
       const insertStr = `INSERT INTO bridge.stats_by_user_periodic (
-        bbo_username
-        date
-        num_lead
-        num_defence
-        num_declaring
-        num_partial
-        num_game
-        num_slam
-        num_grand
-        num_3n
-        num_3n_make
-        num_game_make
-        num_slam_make
-        num_grand_make
-        num_missed_game
-        tricks_diff_declaring
-        tricks_diff_defence
-        lead_cost
-        points_diff
-        imps_diff
-        num_x_pen
-        num_x_sac
-        num_x_pen_optimal
+        bbo_username,
+        date,
+        num_lead,
+        num_defence,
+        num_declaring,
+        num_partial,
+        num_game,
+        num_slam,
+        num_grand,
+        num_3n,
+        num_3n_make,
+        num_game_make,
+        num_slam_make,
+        num_grand_make,
+        num_missed_game,
+        tricks_diff_declaring,
+        tricks_diff_defence,
+        lead_cost,
+        points_diff,
+        imps_diff,
+        num_x_pen,
+        num_x_sac,
+        num_x_pen_optimal,
         num_x_sac_optimal
       ) VALUES (?, toDate(now()), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
       ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -148,9 +149,9 @@ async function insert(boards: Board[], promisifiedClient: PromisifiedStargateCli
       const periodic_lead_cost = new Value()
       periodic_lead_cost.setInt(0)
       const periodic_points_diff = new Value()
-      periodic_points_diff.setInt(0)
+      periodic_points_diff.setInt(board.pointsDiff!)
       const periodic_imps_diff = new Value()
-      periodic_imps_diff.setInt(0)
+      periodic_imps_diff.setInt(board.impsDiff!)
       const num_x_pen = new Value()
       num_x_pen.setInt(0)
       const num_x_sac = new Value()
@@ -214,7 +215,7 @@ async function insert(boards: Board[], promisifiedClient: PromisifiedStargateCli
           case 1:
             updateStr += `, num_partial = num_partial + 1`
             num_partial.setInt(1)
-            if (Math.abs(board.optimalPoints!) > 400 && 
+            if (Math.abs(board.optimalPoints!) >= 300 && 
               board.optimalPoints!/(board.score + Math.abs(board.optimalPoints!)/board.optimalPoints!) >= 1) {
               updateStr += `, num_missed_game = num_missed_game + 1`
               num_missed_game.setInt(1)

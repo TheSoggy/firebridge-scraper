@@ -3,7 +3,7 @@ import { suitSymbols } from './constants'
 export const processBoard = (board: Board, contractStr: string) => {
   contractStr = contractStr.toUpperCase()
   if (!/^[P1-7]/.test(contractStr)) {
-    return
+    return null
   }
   board.contract = contractStr.replace(/[♣♦♥♠]/, match => suitSymbols[match]).replace(/[+\-=]+.*/, '')
   if ('X' == board.contract[2]) {

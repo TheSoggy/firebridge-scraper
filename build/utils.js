@@ -5,7 +5,7 @@ const constants_1 = require("./constants");
 const processBoard = (board, contractStr) => {
     contractStr = contractStr.toUpperCase();
     if (!/^[P1-7]/.test(contractStr)) {
-        return;
+        return null;
     }
     board.contract = contractStr.replace(/[♣♦♥♠]/, match => constants_1.suitSymbols[match]).replace(/[+\-=]+.*/, '');
     if ('X' == board.contract[2]) {

@@ -1,7 +1,6 @@
 import { Page } from 'puppeteer'
 import puppeteer from 'puppeteer-extra'
 import parseLin from './lin_parser'
-import Stealth from 'puppeteer-extra-plugin-stealth'
 import { Cluster } from 'puppeteer-cluster'
 import { Board, ContractLevel, Vul } from './types'
 import { bboDir, ddsDir, bboNumtoDir, ddsContractSuits, ddsSuits, cardRank, pointsToImp } from './constants'
@@ -11,13 +10,11 @@ import { getRandom } from 'random-useragent'
 import xmlParser from 'xml2json'
 import solve from './ddSolver'
 
-puppeteer.use(Stealth())
-
 export const newCluster = async (monitoring: boolean) => {
   const cluster = await Cluster.launch({
     concurrency: Cluster.CONCURRENCY_PAGE,
     maxConcurrency: 25,
-    retryLimit: 20,
+    retryLimit: 5,
     retryDelay: 2000,
     timeout: 600000,
     puppeteer,
@@ -51,13 +48,10 @@ export const restartWorker = () => {
 
 export const disableImgCss = async (page: Page) => {
   await page.setRequestInterception(true)
-  page.on('request', (req) => {
-    if(req.resourceType() == 'stylesheet' || req.resourceType() == 'script' || req.resourceType() == 'font' || req.resourceType() === 'image'){
-      req.abort()
-    }
-    else {
-      req.continue()
-    }
+  page.on('request', async (req) => {
+    ['image', 'stylesheet', 'font', 'script'].includes(req.resourceType())
+      ? await req.abort()
+      : await req.continue()
   })
 }
 
@@ -80,7 +74,7 @@ export const gotoLink = async (page: Page, link: string) => {
       await page.waitForTimeout(1000)
     }
     if (link.includes("mbthands")) {
-      await page.waitForTimeout(200)
+      await page.waitForTimeout(500)
     }
   } while (!response.ok())
 }
@@ -126,7 +120,7 @@ type parsedLin = {
   lead: string
 }
 
-export const getDDData = async (boards: Board[], fromTraveller: boolean) => {
+export const getDDData = (boards: Board[], fromTraveller: boolean) => {
   if (boards.length == 0) return boards
   const handsByVul: string[][] = [[],[],[],[]]
   const idxByVul: number[][] = [[],[],[],[]]
@@ -157,7 +151,7 @@ export const getDDData = async (boards: Board[], fromTraveller: boolean) => {
     var impsDiff = boards[0].impsDiff!
     var optimalPoints = boards[0].optimalPoints!
   }
-  for (const [idx, board] of boards.entries()) {
+  for (const [boardIdx, board] of boards.entries()) {
     let parsedLin = parseLin(board.lin)!
     board.playerIds = parsedLin.playerIds
     board.competitive = parsedLin.competitive
@@ -205,7 +199,7 @@ export const getDDData = async (boards: Board[], fromTraveller: boolean) => {
         leader: ddsDir[bboNumtoDir[(bboDir[board.contract[2]] + 1) % 4]],
         trump: ddsContractSuits[board.contract[1]]
       })
-      leadSolverBoardIdx.push(idx)
+      leadSolverBoardIdx.push(boardIdx)
     } else {
       board.contractLevel = ContractLevel.PASSOUT
     }
@@ -217,16 +211,25 @@ export const getDDData = async (boards: Board[], fromTraveller: boolean) => {
     } else {
       const hands = "W:" + parsedLin.hands.join(' ')
       handsByVul[parsedLin.vul].push(hands)
-      idxByVul[parsedLin.vul].push(idx)
+      idxByVul[parsedLin.vul].push(boardIdx)
     }
   }
   if (fromTraveller) {
     const res = solve(undefined, [...leadSolverBoards])
     if (res.leadData) {
-      for (const idx of leadSolverBoardIdx) {
-        let parsedLin = parseLin(boards[idx].lin)!
-        boards[idx].leadCost = 13 - (<any[]>res.leadData).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
-          boards[idx].tricksTaken! + boards[idx].tricksDiff!
+      for (const [i, leadIdx] of leadSolverBoardIdx.entries()) {
+        let parsedLin = parseLin(boards[leadIdx].lin)!
+        if ((<any[]>res.leadData[i]).some(set => set.values[ddsSuits[parsedLin.lead[0]]] === undefined)) {
+          console.log(JSON.stringify(res.leadData[i]))
+          console.log(JSON.stringify(parsedLin))
+          console.log(JSON.stringify(boards[leadIdx]))
+        }
+        if ((<any[]>res.leadData[i]).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0] === undefined) {
+          console.log(JSON.stringify(res.leadData[i]))
+          console.log(JSON.stringify(parseLin))
+        }
+        boards[leadIdx].leadCost = 13 - (<any[]>res.leadData[i]).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
+          boards[leadIdx].tricksTaken! + boards[leadIdx].tricksDiff!
       }
     }
   } else {
@@ -235,6 +238,10 @@ export const getDDData = async (boards: Board[], fromTraveller: boolean) => {
       for (let i = 0; i < 4; i++) {
         for (let j = 0; j < handsByVul[i].length; j++) {
           if (boards[idxByVul[i][j]].contract != 'P') {
+            if (res.ddData[i][j].ddTricks[ddsDir[boards[idxByVul[i][j]].contract[2]]] === undefined) {
+              console.log(res.ddData[i][j].ddTricks)
+              console.log(boards[idxByVul[i][j]].contract)
+            }
             boards[idxByVul[i][j]].tricksDiff = boards[idxByVul[i][j]].tricksTaken! -
               res.ddData[i][j].ddTricks[ddsDir[boards[idxByVul[i][j]].contract[2]]][ddsContractSuits[boards[idxByVul[i][j]].contract[1]]]
           }
@@ -246,10 +253,19 @@ export const getDDData = async (boards: Board[], fromTraveller: boolean) => {
       }
     }
     if (res.leadData) {
-      for (const [i, idx] of leadSolverBoardIdx.entries()) {
-        let parsedLin = parseLin(boards[idx].lin)!
-        boards[idx].leadCost = 13 - (<any[]>res.leadData[i]).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
-          boards[idx].tricksTaken! + boards[idx].tricksDiff!
+      for (const [i, leadIdx] of leadSolverBoardIdx.entries()) {
+        let parsedLin = parseLin(boards[leadIdx].lin)!
+        if ((<any[]>res.leadData[i]).some(set => set.values[ddsSuits[parsedLin.lead[0]]] === undefined)) {
+          console.log(JSON.stringify(res.leadData[i]))
+          console.log(JSON.stringify(parsedLin))
+          console.log(JSON.stringify(boards[leadIdx]))
+        }
+        if ((<any[]>res.leadData[i]).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0] === undefined) {
+          console.log(JSON.stringify(res.leadData[i]))
+          console.log(JSON.stringify(parseLin))
+        }
+        boards[leadIdx].leadCost = 13 - (<any[]>res.leadData[i]).filter(set => set.values[ddsSuits[parsedLin.lead[0]]].includes(cardRank[parsedLin.lead[1]]))[0].score -
+          boards[leadIdx].tricksTaken! + boards[leadIdx].tricksDiff!
       }
     }
   }
