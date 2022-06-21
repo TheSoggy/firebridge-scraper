@@ -83,7 +83,7 @@ type leadInfo = {
   trump: number
 }
 
-let libdds = ffi.Library(path.join(process.cwd(), 'libdds/src/libdds.so'), {
+let libdds = ffi.Library(path.join(process.cwd(), process.platform === "win32" ? 'libdds/src/dds.dll' : 'libdds/src/libdds.so'), {
   'CalcAllTablesPBN': [ 'int', [ ddTableDealsPBNPtr, 'int', ArrayType('int'), ddTablesResPtr, allParResultsPtr ] ],
   'SolveAllBoards': [ 'int', [ boardsPBNPtr, solvedBoardsPtr ] ]
 })
