@@ -90,8 +90,8 @@ async function update() {
                 processValues(row['system.sum(cast(num_x_pen_optimal as int))'], row['system.sum(cast(num_x_pen as int))']),
                 processValues(row['system.sum(cast(num_x_sac_optimal as int))'], row['system.sum(cast(num_x_sac as int))']),
                 processValues(row['system.sum(cast(lead_cost as int))'], row['system.sum(cast(num_lead as int))']),
-                processValues(row['system.sum(cast(points_diff as bigint))'], row['system.sum(cast(num_deals as int))']),
-                processValues(row['system.sum(cast(imps_diff as int))'], row['system.sum(cast(num_deals as int))'])
+                processValues(row['system.sum(cast(points_diff as bigint))'], row['system.count(bbo_username)']),
+                processValues(row['system.sum(cast(imps_diff as int))'], row['system.count(bbo_username)'])
             ];
             let statNames = ['%_3n_make_weekly', 'tricks_diff_declaring_weekly', '%_game_make_weekly', '%_slam_make_weekly', '%_grand_make_weekly',
                 'tricks_diff_defence_weekly', '%_missed_game_weekly', '%_x_pen_optimal_weekly', '%_x_sac_optimal_weekly', 'avg_lead_cost_weekly',
@@ -125,8 +125,8 @@ async function update() {
                 processValues(row['system.sum(cast(num_x_pen_optimal as int))'], row['system.sum(cast(num_x_pen as int))']),
                 processValues(row['system.sum(cast(num_x_sac_optimal as int))'], row['system.sum(cast(num_x_sac as int))']),
                 processValues(row['system.sum(cast(lead_cost as int))'], row['system.sum(cast(num_lead as int))']),
-                processValues(row['system.sum(cast(points_diff as bigint))'], row['system.sum(cast(num_deals as int))']),
-                processValues(row['system.sum(cast(imps_diff as int))'], row['system.sum(cast(num_deals as int))'])
+                processValues(row['system.sum(cast(points_diff as bigint))'], row['system.count(bbo_username)']),
+                processValues(row['system.sum(cast(imps_diff as int))'], row['system.count(bbo_username)'])
             ];
             let statNames = ['%_3n_make_monthly', 'tricks_diff_declaring_monthly', '%_game_make_monthly', '%_slam_make_monthly', '%_grand_make_monthly',
                 'tricks_diff_defence_monthly', '%_missed_game_monthly', '%_x_pen_optimal_monthly', '%_x_sac_optimal_monthly', 'avg_lead_cost_monthly',
@@ -160,8 +160,8 @@ async function update() {
                 processValues(row['system.sum(cast(num_x_pen_optimal as int))'], row['system.sum(cast(num_x_pen as int))']),
                 processValues(row['system.sum(cast(num_x_sac_optimal as int))'], row['system.sum(cast(num_x_sac as int))']),
                 processValues(row['system.sum(cast(lead_cost as int))'], row['system.sum(cast(num_lead as int))']),
-                processValues(row['system.sum(cast(points_diff as bigint))'], row['system.sum(cast(num_deals as int))']),
-                processValues(row['system.sum(cast(imps_diff as int))'], row['system.sum(cast(num_deals as int))'])
+                processValues(row['system.sum(cast(points_diff as bigint))'], row['system.count(bbo_username)']),
+                processValues(row['system.sum(cast(imps_diff as int))'], row['system.count(bbo_username)'])
             ];
             let statNames = ['%_3n_make_yearly', 'tricks_diff_declaring_yearly', '%_game_make_yearly', '%_slam_make_yearly', '%_grand_make_yearly',
                 'tricks_diff_defence_yearly', '%_missed_game_yearly', '%_x_pen_optimal_yearly', '%_x_sac_optimal_yearly', 'avg_lead_cost_yearly',
