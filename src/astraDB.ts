@@ -11,7 +11,7 @@ async function insert(boards: Board[], promisifiedClient: PromisifiedStargateCli
     try {
       await promisifiedClient.executeQuery(query)
     } catch (err) {
-      if (retryCount > 3) console.log(retryCount)
+      if (retryCount > 2) console.log(`Retry ${retryCount}`)
       setTimeout(async () => await tryQuery(query, retryCount + 1), 250 * retryCount)
     }
   }
@@ -91,7 +91,7 @@ async function insert(boards: Board[], promisifiedClient: PromisifiedStargateCli
         imps_diff = imps_diff ${numToString(board.impsDiff!)}`
       const insertStr = `INSERT INTO bridge.stats_by_user_periodic (
         bbo_username,
-        date,
+        timestamp,
         num_lead,
         num_defence,
         num_declaring,
@@ -114,7 +114,7 @@ async function insert(boards: Board[], promisifiedClient: PromisifiedStargateCli
         num_x_sac,
         num_x_pen_optimal,
         num_x_sac_optimal
-      ) VALUES (?, toDate(now()), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+      ) VALUES (?, toTimestamp(now()), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
       ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       const num_lead = new Value()
       num_lead.setInt(0)
@@ -264,7 +264,7 @@ async function insert(boards: Board[], promisifiedClient: PromisifiedStargateCli
       insertPeriodicStats.setValues(insertValues)
       await tryQuery(insertDealByUser, 1)
       await tryQuery(insertPeriodicStats, 1)
-      await tryQuery(updateCounters, 1)
+      await promisifiedClient.executeQuery(updateCounters)
     }
   }
 }

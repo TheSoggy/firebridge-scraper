@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node --max-old-space-size=512 build/index.js",
+    "start": "node --max-old-space-size=2096 build/index.js",
     "astra": "node build/leaderboard.js",
     "ddsolver": "node build/ddSolver.js",
     "dev": "next dev"
@@ -18,6 +18,7 @@
     "@types/lodash": "^4.14.182",
     "axios": "^0.27.2",
     "axios-retry": "^3.2.5",
+    "cassandra-driver": "^4.6.3",
     "dotenv": "^16.0.1",
     "ffi-napi": "^4.0.3",
     "ioredis": "^5.0.6",

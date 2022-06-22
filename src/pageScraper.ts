@@ -64,33 +64,38 @@ const scraperObject = {
       await page.waitForSelector('.bbo_content')
       page.on('console', message =>
         console.log(`${message.type().substring(0, 3).toUpperCase()} ${message.text()}`))
-      boards = await page.$$eval('.body > tbody > .tourney',
-        (rows, link) => (rows.map(row => {
-          let board: Board = {
-            contract: '',
-            score: 0,
-            lin: '',
-            tricksOverContract: 0,
-            leadCost: 0,
-            tricksDiff: 0,
-            tricksTaken: 0,
-            competitive: false,
-            declarer: ''
-          }
-          try {
-            board.contract = row.querySelector('td.result')!.textContent!
-            board.score = parseInt(row.querySelector('td.score,td.negscore')!.textContent!)
-            board.lin = row.querySelector('td.movie > a[onclick]')!.getAttribute('onclick')!
-          } catch (err) {
-            if ((link as string).includes("mbthands")) {
-              return null as any
+      const getBoards = async () => {
+        return await page.$$eval('.body > tbody > .tourney',
+          (rows, link) => (rows.map(row => {
+            let board: Board = {
+              contract: '',
+              score: 0,
+              lin: '',
+              tricksOverContract: 0,
+              leadCost: 0,
+              tricksDiff: 0,
+              tricksTaken: 0,
+              competitive: false,
+              declarer: ''
             }
-          }
-          return board
-        }) || []), link)
-      if (boards.includes(null as any)) {
+            try {
+              board.contract = row.querySelector('td.result')!.textContent!
+              board.score = parseInt(row.querySelector('td.score,td.negscore')!.textContent!)
+              board.lin = row.querySelector('td.movie > a[onclick]')!.getAttribute('onclick')!
+            } catch (err) {
+              if ((link as string).includes("mbthands")) {
+                return null as any
+              }
+            }
+            return board
+          }) || []), link)
+      }
+      boards = await getBoards()
+      while (boards.includes(null as any)) {
         console.log('retry ' + link)
-        return travellerPromise({page, data: link})
+        await gotoLink(page, link)
+        await page.waitForSelector('.bbo_content')
+        boards = await getBoards()
       }
       boards = boards.map(board => processBoard(board, board.contract)).filter(board => board) as Board[]
       await Promise.all(boards.map(async board => getLin(board)))
@@ -129,14 +134,15 @@ const scraperObject = {
           result.contract = htmllink.text
           return result
       }) || []))).filter(board => parseLin(board.lin))
-      dataObj.boards = dataObj.boards.map(board => processBoard(board, board.contract)).filter(board => board) as Board[]
+      dataObj.boards = dataObj.boards.map(board => processBoard(board, board.contract)) as Board[]
       await page.$$eval('table.handrecords > tbody > tr > td.resultcell + td',
         cells => (cells.map(cell => (<HTMLTableCellElement>cell).textContent!) || [])
         .filter(text => text.length > 0))
         .then(cells => cells
           .forEach((cell, idx) => {
-            dataObj.boards[idx].score = parseInt(cell)
+            if (dataObj.boards[idx]) dataObj.boards[idx].score = parseInt(cell)
           }))
+      dataObj.boards = dataObj.boards.filter(board => board)
       if (dataObj.firstPair) {
         if (dataObj.firstPair.includes('mbthands')) {
           let people = await page.$$eval('.onesection > .sectiontable > tbody > tr > td > a',

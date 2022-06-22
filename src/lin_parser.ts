@@ -18,6 +18,7 @@ const parseLin = (lin: string) => {
   if (player_ids === null) {
     return null;
   }
+  lin = lin.replace(/\|an\|[^\|]+\|/g, '|')
   try {
     // player order is always S,W,N,E
     result.playerIds = player_ids[0].substring(3).split(',')
